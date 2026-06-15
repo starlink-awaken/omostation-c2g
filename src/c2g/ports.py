@@ -1,4 +1,4 @@
-from typing import Protocol, List, Optional
+from typing import Protocol, List
 from .domain import PitchSchema, BetSchema, TaskSchema
 
 class IGovernanceProvider(Protocol):

@@ -6,6 +6,7 @@ import yaml
 
 from .bridge_id import _generate_task_id, _infer_phase_wave
 from .bridge_depend import _resolve_depends_on
+from .task_builder import build_ecos_task, build_local_task
 
 
 def _utc_now() -> str:
@@ -43,6 +44,7 @@ def _save_local_task(base_dir: Path, task_data: dict, adapter: str) -> bool:
     store.save_task(task)
     return True
 
+
 def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapter: str = "ecos"):
     print(f"🌉 正在将 BMAD / OpenSpec 规范转换为 OMO Planned Tasks: {file_path}")
     content = file_path.read_text(encoding="utf-8")
@@ -76,11 +78,8 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
         evidence_parsed = ["[Fallback] Default evidence"]
 
     # Pass 2: 收集所有 - [ ] 行的 title, 算好 title → IMPORTED id 映射.
-    # Pass 3: 写文件时 depends_on 用映射回查, 避免断链.
     title_to_imported: dict[str, str] = {}
-    parsed_tasks: list[
-        tuple[str, list[str]]
-    ] = []  # [(task_title, depends_on_raw), ...]
+    parsed_tasks: list[tuple[str, list[str]]] = []
 
     for line in content.split("\n"):
         if "- [ ]" not in line:
@@ -96,16 +95,14 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
         else:
             task_title = raw_title
 
-        # 解析 sequential 模式下的隐式依赖, 暂时用 task_title 占位
         title_to_imported[task_title] = _generate_task_id(task_title)
         parsed_tasks.append((task_title, depends_on_raw))
 
-    # Pass 2: 写文件, depends_on 用 _resolve_depends_on 替换为真实 IMPORTED id.
+    # Pass 3: 写文件, depends_on 用 _resolve_depends_on 替换为真实 IMPORTED id.
     last_task_id: str | None = None
     for idx, (task_title, depends_on_raw) in enumerate(parsed_tasks):
         task_id = title_to_imported[task_title]
 
-        # 显式依赖优先; 没有时, sequential 模式追加上一个 task 的 IMPORTED id
         if depends_on_raw:
             depends_on = _resolve_depends_on(depends_on_raw, title_to_imported)
         elif sequential and last_task_id:
@@ -115,36 +112,6 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
 
         phase, wave = _infer_phase_wave(task_title)
 
-        task_data: dict = {
-            "id": task_id,
-            "title": task_title,
-            "status": "candidate",
-            "task_type": "feature",
-            "risk_level": "L0",
-            "depends_on": depends_on,
-            "source_docs": [str(file_path.absolute())],
-            "deliverables": ["执行记录与源码修改"],
-            "imported_via": "omo_bridge",
-            "context_uri": f"bos://memory/openspecs/{file_path.name}#{task_id}",
-            # [M2 CONTRACT] 必须的空位字段
-            "assigned_to": None,
-            "dispatch_id": None,
-            "run_ref": None,
-            "approval_ref": None,
-            "review_ref": None,
-            "knowledge_refs": [],
-            "handoff_refs": [],
-            "entry_gate": [],
-            "evidence_required": evidence_parsed,
-            "test_plan": test_plan_parsed,
-            "allowed_operation_level": "L0",
-            "human_approval_required": False,
-        }
-        if phase is not None:
-            task_data["phase"] = phase
-        if wave is not None:
-            task_data["wave"] = wave
-
         # [DEVIL'S GATEKEEPER]: OMO Pre-Check Before Materialization
         if "TODO" in task_title or "TBD" in task_title:
             print(
@@ -153,27 +120,28 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
             continue
 
         if adapter == "ecos":
+            task_data = build_ecos_task(
+                task_id, task_title,
+                depends_on=depends_on,
+                source_docs=[str(file_path.absolute())],
+                evidence_required=evidence_parsed,
+                test_plan=test_plan_parsed,
+                context_uri=f"bos://memory/openspecs/{file_path.name}#{task_id}",
+                extra={"phase": phase, "wave": wave} if phase or wave else None,
+            )
             if not _validate_ecos_task(task_data):
                 continue
             _write_ecos_task(omo_dir, task_id, task_data)
         else:
-            now = _utc_now()
-            local_task_data = {
-                "task_id": task_id,
-                "title": task_title,
-                "description": f"Imported from {file_path.name}",
-                "status": "planned",
-                "created_at": now,
-                "updated_at": now,
-                "metadata": {
-                    "depends_on": depends_on,
-                    "source_docs": [str(file_path.absolute())],
-                    "context_uri": f"bos://memory/openspecs/{file_path.name}#{task_id}",
-                    "phase": phase,
-                    "wave": wave,
-                },
-            }
-            if not _save_local_task(omo_dir, local_task_data, adapter):
+            task_data = build_local_task(
+                task_id, task_title,
+                description=f"Imported from {file_path.name}",
+                depends_on=depends_on,
+                source_docs=[str(file_path.absolute())],
+                context_uri=f"bos://memory/openspecs/{file_path.name}#{task_id}",
+                extra={"metadata": {"phase": phase, "wave": wave}},
+            )
+            if not _save_local_task(omo_dir, task_data, adapter):
                 continue
 
         print(f"  -> 创建了任务: {task_id} (依赖: {depends_on}) [M2 Validated]")
@@ -191,52 +159,28 @@ def _import_fast_track(source_topic: Path, omo_dir: Path, adapter: str = "ecos")
     planned_dir = omo_dir / "tasks" / "planned"
     planned_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate task data directly without LLM
     task_id = f"FAST-{int(time.time())}"
-    task_data = {
-        "id": task_id,
-        "title": str(source_topic.name),
-        "status": "candidate",
-        "task_type": "feature",
-        "risk_level": "L0",
-        "depends_on": [],
-        "source_docs": ["bos://memory/fast-track/virtual-doc"],
-        "deliverables": ["直接代码修改"],
-        "imported_via": "fast_track_cli",
-        "context_uri": f"bos://memory/fast-track/{task_id}",
-        "evidence_required": ["代码修改自证"],
-        "test_plan": ["冒烟测试"],
-        "allowed_operation_level": "L0",
-        "human_approval_required": False,
-        "assigned_to": None,
-        "dispatch_id": None,
-        "run_ref": None,
-        "approval_ref": None,
-        "review_ref": None,
-        "knowledge_refs": [],
-        "handoff_refs": [],
-        "entry_gate": ["FAST_TRACK_L0"],
-    }
 
     if adapter == "ecos":
+        task_data = build_ecos_task(
+            task_id, str(source_topic.name),
+            context_uri=f"bos://memory/fast-track/{task_id}",
+            source_docs=["bos://memory/fast-track/virtual-doc"],
+            entry_gate=["FAST_TRACK_L0"],
+            imported_via="fast_track_cli",
+        )
         if not _validate_ecos_task(task_data):
             return
         _write_ecos_task(omo_dir, task_id, task_data)
     else:
-        now = _utc_now()
-        local_task_data = {
-            "task_id": task_id,
-            "title": str(source_topic.name),
-            "description": "Fast-track task",
-            "status": "planned",
-            "created_at": now,
-            "updated_at": now,
-            "metadata": {
-                "context_uri": f"bos://memory/fast-track/{task_id}",
-                "source_docs": ["bos://memory/fast-track/virtual-doc"],
-            },
-        }
-        if not _save_local_task(omo_dir, local_task_data, adapter):
+        task_data = build_local_task(
+            task_id, str(source_topic.name),
+            description="Fast-track task",
+            source_docs=["bos://memory/fast-track/virtual-doc"],
+            context_uri=f"bos://memory/fast-track/{task_id}",
+            imported_via="fast_track_cli",
+        )
+        if not _save_local_task(omo_dir, task_data, adapter):
             return
 
     print(f"✅ Fast-Track 成功: 已落盘为 OMO CARDS ({task_id}.yaml)")
@@ -267,7 +211,6 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     bet_id = f"BET-{hashlib.md5(source_file.name.encode()).hexdigest()[:4]}"
     desc = f"Bet: {source_file.stem} (Appetite: {appetite})"
 
-    # 将 Bet 加入 current.yaml
     from .domain import BetSchema
     store.save_bet(BetSchema(goal_id=bet_id, title=source_file.stem, description=desc, appetite=appetite, created_at=_utc_now()))
 
@@ -277,9 +220,8 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
 
     print("  🧠 正在调用 LLM 结构化提取任务...")
     llm_tasks = extract_tasks_from_pitch(content)
-    
+
     if not llm_tasks:
-        # Fallback to single mock task if LLM fails or is absent
         llm_tasks = [{
             "title": f"执行 {bet_id}: {source_file.stem}",
             "description": f"从 Pitch转化而来的任务: {source_file.stem}",
@@ -291,70 +233,56 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
             "test_plan": ["依据 Pitch 验收"]
         }]
 
-    # Process and validate extracted tasks
     tasks_created = 0
     for idx, extracted in enumerate(llm_tasks):
         task_id = f"IMPORTED-{hashlib.md5((bet_id + str(idx)).encode()).hexdigest()[:6]}"
 
         if adapter == "ecos":
-            now = _utc_now()
-            task_data = {
-                "id": task_id,
-                "title": extracted.get("title", f"Task {idx}"),
-                "status": "candidate",
-                "task_type": extracted.get("task_type", "feature"),
-                "risk_level": extracted.get("risk_level", "L0"),
-                "depends_on": [],
-                "source_docs": [str(source_file.absolute())],
-                "deliverables": extracted.get("deliverables", []),
-                "imported_via": "omo_bridge_pitch",
-                "context_uri": f"bos://memory/sandbox/pitches/{source_file.name}",
-                "assigned_to": None,
-                "dispatch_id": None,
-                "run_ref": None,
-                "approval_ref": None,
-                "review_ref": None,
-                "knowledge_refs": [],
-                "handoff_refs": [],
-                "entry_gate": ["BET_APPROVED"],
-                "evidence_required": extracted.get("evidence_required", []),
-                "test_plan": extracted.get("test_plan", []),
-                "allowed_operation_level": "L0",
-                "human_approval_required": False,
-                "created_at": now,
-                "updated_at": now,
-                "metadata": {
-                    "bet_id": bet_id,
-                    "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+            task_data = build_ecos_task(
+                task_id, extracted.get("title", f"Task {idx}"),
+                task_type=extracted.get("task_type", "feature"),
+                risk_level=extracted.get("risk_level", "L0"),
+                source_docs=[str(source_file.absolute())],
+                deliverables=extracted.get("deliverables", []),
+                evidence_required=extracted.get("evidence_required", []),
+                test_plan=extracted.get("test_plan", []),
+                context_uri=f"bos://memory/sandbox/pitches/{source_file.name}",
+                entry_gate=["BET_APPROVED"],
+                imported_via="omo_bridge_pitch",
+                extra={
+                    "created_at": _utc_now(),
+                    "updated_at": _utc_now(),
+                    "metadata": {
+                        "bet_id": bet_id,
+                        "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                    },
                 },
-            }
+            )
             if not _validate_ecos_task(task_data):
                 print(f"  ❌ M2 防腐层拦截 (Schema Validation Failed for task {task_id})")
                 continue
             _write_ecos_task(base_dir, task_id, task_data)
         else:
-            now = _utc_now()
-            local_task_data = {
-                "task_id": task_id,
-                "title": extracted.get("title", f"Task {idx}"),
-                "description": extracted.get("description", "No description"),
-                "status": "planned",
-                "created_at": now,
-                "updated_at": now,
-                "metadata": {
-                    "task_type": extracted.get("task_type", "feature"),
-                    "risk_level": extracted.get("risk_level", "L0"),
-                    "deliverables": extracted.get("deliverables", []),
-                    "imported_via": "omo_bridge_pitch",
-                    "context_uri": f"bos://memory/sandbox/pitches/{source_file.name}",
-                    "evidence_required": extracted.get("evidence_required", []),
-                    "test_plan": extracted.get("test_plan", []),
-                    "wait_for_gate": ["BET_APPROVED"],
-                    "bet_id": bet_id,
-                    "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+            task_data = build_local_task(
+                task_id, extracted.get("title", f"Task {idx}"),
+                description=extracted.get("description", "No description"),
+                source_docs=[str(source_file.absolute())],
+                context_uri=f"bos://memory/sandbox/pitches/{source_file.name}",
+                imported_via="omo_bridge_pitch",
+                extra={
+                    "metadata": {
+                        "task_type": extracted.get("task_type", "feature"),
+                        "risk_level": extracted.get("risk_level", "L0"),
+                        "deliverables": extracted.get("deliverables", []),
+                        "evidence_required": extracted.get("evidence_required", []),
+                        "test_plan": extracted.get("test_plan", []),
+                        "wait_for_gate": ["BET_APPROVED"],
+                        "bet_id": bet_id,
+                        "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                    },
                 },
-            }
-            if not _save_local_task(base_dir, local_task_data, adapter):
+            )
+            if not _save_local_task(base_dir, task_data, adapter):
                 continue
 
         print(f"  ✅ 提取任务成功: {task_id} ({extracted.get('title', f'Task {idx}')})")

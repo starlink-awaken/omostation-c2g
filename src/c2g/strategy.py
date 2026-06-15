@@ -158,7 +158,7 @@ def strategy_audit(base_dir: Path, adapter: str = "ecos") -> int:
 
     # 3. Owner (top 10)
     print()
-    print(f"👥 Owner Distribution (top 10):")
+    print("👥 Owner Distribution (top 10):")
     for o, count in metrics["owner"].most_common(10):
         print(f"   {o:<24} {count:>3}")
 

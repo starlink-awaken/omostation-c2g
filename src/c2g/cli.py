@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from c2g.bridge import _import_bmad, _import_fast_track, _import_pitch, get_omo_dir
+from c2g.bridge import _import_pitch, get_omo_dir
 from c2g.strategy import strategy_audit, strategy_gc
 
 def main(argv: list[str] | None = None) -> int:
@@ -17,7 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     parser_bs.add_argument("topic", type=str, help="The topic to brainstorm")
     
     # 1.5 Draft (V2P) - Interactive Pitch Wizard
-    parser_draft = subparsers.add_parser("draft", help="[V2P] Interactive wizard to draft a Pitch")
+    subparsers.add_parser("draft", help="[V2P] Interactive wizard to draft a Pitch")
     
     # 2. Bet (C2G) - bridging pitch to bet
     parser_bet = subparsers.add_parser("bet", help="[C2G] Convert a Pitch into a tracked Bet")
@@ -80,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         if not source.exists():
             print(f"❌ Error: Pitch file {source} not found.")
             return 1
-        print(f"🌉 [C2G] 触发桥接，验证 M2 Schema 与 L0 约束...")
+        print("🌉 [C2G] 触发桥接，验证 M2 Schema 与 L0 约束...")
         _import_pitch(source, omo_dir, args.adapter)
         
     elif args.command == "radar":

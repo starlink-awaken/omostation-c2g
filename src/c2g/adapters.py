@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 import importlib
 from .ports import IGovernanceProvider, IStorageProvider
 from .domain import PitchSchema, BetSchema, TaskSchema
@@ -12,7 +12,7 @@ class EcosGovernanceProvider(IGovernanceProvider):
 
     def validate_pitch(self, pitch: PitchSchema) -> bool:
         if not pitch.upstream_ref:
-            print(f"  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch缺乏Upstream锚点，拒绝转化为Bet。")
+            print("  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch缺乏Upstream锚点，拒绝转化为Bet。")
             return False
         return True
 
@@ -51,7 +51,6 @@ class EcosStorageProvider(IStorageProvider):
         return task.task_id
 
     def get_pitches(self) -> List[PitchSchema]:
-        import hashlib
         sandbox_dir = self.omo_dir.parent / "runtime" / "sandbox" / "pitches"
         if not sandbox_dir.exists():
             return []

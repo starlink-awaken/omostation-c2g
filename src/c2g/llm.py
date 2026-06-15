@@ -1,9 +1,14 @@
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
 import httpx
 import yaml
+
+
+# LLM Gateway endpoint — 可配置，默认 localhost:9290
+_LLM_GATEWAY_URL = os.environ.get("C2G_LLM_URL", "http://localhost:9290/v1/generate")
 
 
 def _find_cognitive_framework_dir() -> Path | None:
@@ -40,7 +45,7 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     通过 AetherForge LLM-Gateway 将 Markdown Pitch 解析为结构化的 OMO 任务列表。
     如果 LLM-Gateway 服务不可用，则自动回退到 Mock 逻辑。
     """
-    url = "http://localhost:9290/v1/generate"
+    url = _LLM_GATEWAY_URL
     cartridges_context = _load_cognitive_cartridges()
     
     prompt = f"""
