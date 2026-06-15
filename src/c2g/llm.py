@@ -1,6 +1,39 @@
 import json
+from pathlib import Path
+from typing import Any, Dict
+
 import httpx
-from typing import Dict, Any
+import yaml
+
+
+def _find_cognitive_framework_dir() -> Path | None:
+    """尽量从当前仓定位 ecos 的 cognitive framework 目录, 避免用户路径硬编码."""
+    here = Path(__file__).resolve()
+    candidates: list[Path] = []
+    for parent in here.parents:
+        candidates.append(parent / "projects" / "ecos" / "src" / "ecos" / "ssot" / "mof" / "m1" / "cognitive_framework")
+        candidates.append(parent / "ecos" / "src" / "ecos" / "ssot" / "mof" / "m1" / "cognitive_framework")
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+def _load_cognitive_cartridges() -> str:
+    """动态加载 M1 层的认知卡带"""
+    frameworks = []
+    framework_dir = _find_cognitive_framework_dir()
+    if framework_dir:
+        for f in sorted(framework_dir.glob("*.yaml")):
+            try:
+                with f.open("r", encoding="utf-8") as file:
+                    data = yaml.safe_load(file)
+                    if data and data.get("type") == "CognitiveFramework":
+                        frameworks.append(f"- {data.get('id')}: {data.get('name')} ({data.get('description')})")
+            except Exception:
+                pass
+    if not frameworks:
+        return "无可用卡带"
+    return "\n".join(frameworks)
 
 def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     """
@@ -8,16 +41,21 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     如果 LLM-Gateway 服务不可用，则自动回退到 Mock 逻辑。
     """
     url = "http://localhost:9290/v1/generate"
+    cartridges_context = _load_cognitive_cartridges()
     
     prompt = f"""
     你是一个 OMO 架构下的首席技术合伙人 (CTO)。
     请阅读下面的点子 (Pitch) 提案，将其拆解为 1-3 个具体的 OMO 执行任务。
+    
+    在我们的系统中，我们支持挂载以下认知卡带 (Cognitive Cartridges) 以处理不同类型的任务：
+    {cartridges_context}
     
     必须以 JSON 数组格式返回，每个任务必须包含以下字段：
     - title: 任务标题
     - description: 任务详细描述（包含技术上下文）
     - task_type: "feature" 或 "refactor" 或 "bugfix"
     - risk_level: "L0" 到 "L3" (一般填 L0 或 L1)
+    - cognitive_cartridge: 字符串，请从上述可用的卡带 ID 中选择一个最适合执行此任务的卡带（例如 GSD-V1，如果没有合适的则留空）
     - deliverables: 数组，预期的交付物列表
     - evidence_required: 数组，需要提供的验收证据
     - test_plan: 数组，测试计划
@@ -78,6 +116,7 @@ def _mock_extract(pitch_content: str) -> list[Dict[str, Any]]:
             "description": "允许将独立的执行流（如 GSD、Superpowers）动态注入 MetaOS，通过配置而非硬编码实现多范式支持。",
             "task_type": "feature",
             "risk_level": "L1",
+            "cognitive_cartridge": "",
             "deliverables": [
                 "1份架构设计方案 (Schema & Extension point)",
                 "2个概念验证卡带: GSD, Superpowers"

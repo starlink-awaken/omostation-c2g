@@ -1,8 +1,47 @@
-import yaml
-import hashlib
 from pathlib import Path
+from datetime import UTC, datetime
+import hashlib
+
+import yaml
+
 from .bridge_id import _generate_task_id, _infer_phase_wave
 from .bridge_depend import _resolve_depends_on
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _validate_ecos_task(task_data: dict) -> bool:
+    from omo.omo_task_schema import validate_task_data
+
+    validation_errors = validate_task_data(task_data, group="planned")
+    if validation_errors:
+        print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
+        for err in validation_errors:
+            print(f"     - {err}")
+        return False
+    return True
+
+
+def _write_ecos_task(omo_dir: Path, task_id: str, task_data: dict) -> None:
+    planned_dir = omo_dir / "tasks" / "planned"
+    planned_dir.mkdir(parents=True, exist_ok=True)
+    task_file = planned_dir / f"{task_id}.yaml"
+    task_file.write_text(yaml.dump(task_data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+def _save_local_task(base_dir: Path, task_data: dict, adapter: str) -> bool:
+    from .adapters import get_providers
+    from .domain import TaskSchema
+
+    gov, store = get_providers(str(base_dir), adapter)
+    task = TaskSchema(**task_data)
+    if not gov.validate_task(task):
+        print("  ❌ 本地治理校验失败")
+        return False
+    store.save_task(task)
+    return True
 
 def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapter: str = "ecos"):
     print(f"🌉 正在将 BMAD / OpenSpec 规范转换为 OMO Planned Tasks: {file_path}")
@@ -113,40 +152,30 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
             )
             continue
 
-        # [MODEL-DRIVEN M2 VALIDATION & X1-X4 Governance Checks]
-        from .adapters import get_providers
-        gov, store = get_providers(base_dir, adapter)
-        from .domain import TaskSchema
-        t = TaskSchema(**task_data)
-        if not gov.validate_task(t):
-            validation_errors = ["M2 validation failed"]
+        if adapter == "ecos":
+            if not _validate_ecos_task(task_data):
+                continue
+            _write_ecos_task(omo_dir, task_id, task_data)
         else:
-            validation_errors = []
-            if validation_errors:
-                print(
-                    f"  [Attempt {attempt}] ⚠️ 逆向推导引擎拦截幻觉 (Schema Validation Failed): 任务 {task_id}"
-                )
-                for err in validation_errors:
-                    print(f"     - {err}")
+            now = _utc_now()
+            local_task_data = {
+                "task_id": task_id,
+                "title": task_title,
+                "description": f"Imported from {file_path.name}",
+                "status": "planned",
+                "created_at": now,
+                "updated_at": now,
+                "metadata": {
+                    "depends_on": depends_on,
+                    "source_docs": [str(file_path.absolute())],
+                    "context_uri": f"bos://memory/openspecs/{file_path.name}#{task_id}",
+                    "phase": phase,
+                    "wave": wave,
+                },
+            }
+            if not _save_local_task(omo_dir, local_task_data, adapter):
+                continue
 
-                if attempt < max_retries:
-                    print(
-                        "  🔄 触发重试逻辑 (Retry Loop) - 要求大模型基于 schema 修正脏数据..."
-                    )
-                    # TODO: Inject real LLM Structured Output API call here
-                    # task_data = llm_structured_output(prompt=f"Fix {validation_errors}", schema=OMO_TASK_SCHEMA)
-                    break  # Break loop for now since LLM is mocked
-                else:
-                    print("  ❌ 达到最大重试次数，拒绝脏数据流入 OMO。")
-                    break
-            else:
-                validation_passed = True
-
-        if not validation_passed:
-            continue
-
-        task_file = planned_dir / f"{task_id}.yaml"
-        task_file.write_text(yaml.dump(task_data, allow_unicode=True, sort_keys=False))
         print(f"  -> 创建了任务: {task_id} (依赖: {depends_on}) [M2 Validated]")
         tasks_created += 1
         last_task_id = task_id
@@ -189,23 +218,27 @@ def _import_fast_track(source_topic: Path, omo_dir: Path, adapter: str = "ecos")
         "entry_gate": ["FAST_TRACK_L0"],
     }
 
-    # [MODEL-DRIVEN M2 VALIDATION]
-    from .adapters import get_providers
-    gov, store = get_providers(base_dir, adapter)
-    from .domain import TaskSchema
-    t = TaskSchema(**task_data)
-    if not gov.validate_task(t):
-        validation_errors = ["M2 validation failed"]
+    if adapter == "ecos":
+        if not _validate_ecos_task(task_data):
+            return
+        _write_ecos_task(omo_dir, task_id, task_data)
     else:
-        validation_errors = []
-    if validation_errors:
-        print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
-        for err in validation_errors:
-            print(f"     - {err}")
-        return
+        now = _utc_now()
+        local_task_data = {
+            "task_id": task_id,
+            "title": str(source_topic.name),
+            "description": "Fast-track task",
+            "status": "planned",
+            "created_at": now,
+            "updated_at": now,
+            "metadata": {
+                "context_uri": f"bos://memory/fast-track/{task_id}",
+                "source_docs": ["bos://memory/fast-track/virtual-doc"],
+            },
+        }
+        if not _save_local_task(omo_dir, local_task_data, adapter):
+            return
 
-    task_file = planned_dir / f"{task_id}.yaml"
-    task_file.write_text(yaml.dump(task_data, allow_unicode=True, sort_keys=False))
     print(f"✅ Fast-Track 成功: 已落盘为 OMO CARDS ({task_id}.yaml)")
 
 
@@ -213,7 +246,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     """[C2G v4] 将 Pitch (提案) 转换为 Bet 并在 OMO 中生成 Planned Task."""
     from .adapters import get_providers
     from .llm import extract_tasks_from_pitch
-    gov, store = get_providers(base_dir, adapter)
+    gov, store = get_providers(str(base_dir), adapter)
     print(f"🌉 [C2G v4] 正在将 Pitch 转化为 OMO Bet: {source_file.name}")
     content = source_file.read_text(encoding="utf-8")
 
@@ -236,7 +269,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
 
     # 将 Bet 加入 current.yaml
     from .domain import BetSchema
-    store.save_bet(BetSchema(goal_id=bet_id, title=source_file.stem, description=desc, appetite=appetite, created_at=""))
+    store.save_bet(BetSchema(goal_id=bet_id, title=source_file.stem, description=desc, appetite=appetite, created_at=_utc_now()))
 
     # 派生 Planned Task
     planned_dir = base_dir / "tasks" / "planned"
@@ -252,50 +285,79 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
             "description": f"从 Pitch转化而来的任务: {source_file.stem}",
             "task_type": "feature",
             "risk_level": "L0",
+            "cognitive_cartridge": "",
             "deliverables": [f"达成 {bet_id}"],
             "evidence_required": ["回写 Pitch 并通过 Bet 验收"],
             "test_plan": ["依据 Pitch 验收"]
         }]
 
     # Process and validate extracted tasks
-    from .domain import TaskSchema
     tasks_created = 0
     for idx, extracted in enumerate(llm_tasks):
         task_id = f"IMPORTED-{hashlib.md5((bet_id + str(idx)).encode()).hexdigest()[:6]}"
-        
-        task_data = {
-            "task_id": task_id,
-            "title": extracted.get("title", f"Task {idx}"),
-            "description": extracted.get("description", "No description"),
-            "state": "planned",
-            "task_type": extracted.get("task_type", "feature"),
-            "risk_level": extracted.get("risk_level", "L0"),
-            "depends_on": [],
-            "source_docs": [str(source_file.absolute())],
-            "deliverables": extracted.get("deliverables", []),
-            "imported_via": "omo_bridge_pitch",
-            "context_uri": f"bos://memory/sandbox/pitches/{source_file.name}",
-            "evidence_required": extracted.get("evidence_required", []),
-            "test_plan": extracted.get("test_plan", []),
-            "allowed_operation_level": "L0",
-            "human_approval_required": False,
-            "assigned_to": None,
-            "gate_status": "not_yet_passed",
-            "wait_for_gate": ["BET_APPROVED"],
-            "created_at": "2026-06-15T00:00:00Z",
-            "updated_at": "2026-06-15T00:00:00Z"
-        }
 
-        # [MODEL-DRIVEN M2 VALIDATION]
-        t = TaskSchema(**task_data)
-        if not gov.validate_task(t):
-            print(f"  ❌ M2 防腐层拦截 (Schema Validation Failed for task {task_id})")
-            continue
+        if adapter == "ecos":
+            now = _utc_now()
+            task_data = {
+                "id": task_id,
+                "title": extracted.get("title", f"Task {idx}"),
+                "status": "candidate",
+                "task_type": extracted.get("task_type", "feature"),
+                "risk_level": extracted.get("risk_level", "L0"),
+                "depends_on": [],
+                "source_docs": [str(source_file.absolute())],
+                "deliverables": extracted.get("deliverables", []),
+                "imported_via": "omo_bridge_pitch",
+                "context_uri": f"bos://memory/sandbox/pitches/{source_file.name}",
+                "assigned_to": None,
+                "dispatch_id": None,
+                "run_ref": None,
+                "approval_ref": None,
+                "review_ref": None,
+                "knowledge_refs": [],
+                "handoff_refs": [],
+                "entry_gate": ["BET_APPROVED"],
+                "evidence_required": extracted.get("evidence_required", []),
+                "test_plan": extracted.get("test_plan", []),
+                "allowed_operation_level": "L0",
+                "human_approval_required": False,
+                "created_at": now,
+                "updated_at": now,
+                "metadata": {
+                    "bet_id": bet_id,
+                    "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                },
+            }
+            if not _validate_ecos_task(task_data):
+                print(f"  ❌ M2 防腐层拦截 (Schema Validation Failed for task {task_id})")
+                continue
+            _write_ecos_task(base_dir, task_id, task_data)
+        else:
+            now = _utc_now()
+            local_task_data = {
+                "task_id": task_id,
+                "title": extracted.get("title", f"Task {idx}"),
+                "description": extracted.get("description", "No description"),
+                "status": "planned",
+                "created_at": now,
+                "updated_at": now,
+                "metadata": {
+                    "task_type": extracted.get("task_type", "feature"),
+                    "risk_level": extracted.get("risk_level", "L0"),
+                    "deliverables": extracted.get("deliverables", []),
+                    "imported_via": "omo_bridge_pitch",
+                    "context_uri": f"bos://memory/sandbox/pitches/{source_file.name}",
+                    "evidence_required": extracted.get("evidence_required", []),
+                    "test_plan": extracted.get("test_plan", []),
+                    "wait_for_gate": ["BET_APPROVED"],
+                    "bet_id": bet_id,
+                    "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                },
+            }
+            if not _save_local_task(base_dir, local_task_data, adapter):
+                continue
 
-        task_file = planned_dir / f"{task_id}.yaml"
-        task_file.write_text(yaml.dump(task_data, allow_unicode=True, sort_keys=False))
-        print(f"  ✅ 提取任务成功: {task_id} ({task_data['title']})")
+        print(f"  ✅ 提取任务成功: {task_id} ({extracted.get('title', f'Task {idx}')})")
         tasks_created += 1
 
     print(f"✅ Bet 下注成功: 共创建了 {tasks_created} 个执行计划。")
-

@@ -26,3 +26,7 @@ omo = { path = "../omo" }
 [project.scripts]
 c2g = "c2g.cli:main"
 c2g-mcp = "c2g.mcp_server:mcp.run"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
