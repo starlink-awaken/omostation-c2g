@@ -21,7 +21,7 @@
 
 - ecos (L0)
 - omo (L2)
-- llm-gateway
+- aetherforge-gateway (aetherforge/packages/gateway/)
 
 ## 3. 下游影响
 
