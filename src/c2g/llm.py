@@ -40,6 +40,45 @@ def _load_cognitive_cartridges() -> str:
         return "无可用卡带"
     return "\n".join(frameworks)
 
+def _parse_json_result(result_text: str) -> list[Dict[str, Any]]:
+    """
+    鲁棒 JSON 提取：优先级 1 = markdown ```json 块，优先级 2 = 裸 { 或 [。
+    失败时返回 None（由调用方决定是否回退）。
+    """
+    text = result_text.strip()
+
+    # 优先级 1: 提取 ```json ... ``` 块 (re.DOTALL, 非贪婪)
+    import re
+    m = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+    if m:
+        json_str = m.group(1).strip()
+        try:
+            parsed = json.loads(json_str)
+            return parsed if isinstance(parsed, list) else [parsed]
+        except json.JSONDecodeError:
+            pass  # 继续尝试优先级 2
+
+    # 优先级 2: 找首个 { 或 [ 到末尾
+    first_char = text[0] if text else ""
+    if first_char in ("{", "["):
+        # 找到结构末尾
+        try:
+            parsed = json.loads(text)
+            return parsed if isinstance(parsed, list) else [parsed]
+        except json.JSONDecodeError:
+            # 尝试裁掉末尾可能的 markdown 噪音
+            for end in range(len(text), 0, -1):
+                try:
+                    parsed = json.loads(text[:end])
+                    return parsed if isinstance(parsed, list) else [parsed]
+                except json.JSONDecodeError:
+                    continue
+            # 全部失败，放弃
+            pass
+
+    return None
+
+
 def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     """
     通过 AetherForge LLM-Gateway 将 Markdown Pitch 解析为结构化的 OMO 任务列表。
@@ -47,14 +86,14 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     """
     url = _LLM_GATEWAY_URL
     cartridges_context = _load_cognitive_cartridges()
-    
+
     prompt = f"""
     你是一个 OMO 架构下的首席技术合伙人 (CTO)。
     请阅读下面的点子 (Pitch) 提案，将其拆解为 1-3 个具体的 OMO 执行任务。
-    
+
     在我们的系统中，我们支持挂载以下认知卡带 (Cognitive Cartridges) 以处理不同类型的任务：
     {cartridges_context}
-    
+
     必须以 JSON 数组格式返回，每个任务必须包含以下字段：
     - title: 任务标题
     - description: 任务详细描述（包含技术上下文）
@@ -64,23 +103,22 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     - deliverables: 数组，预期的交付物列表
     - evidence_required: 数组，需要提供的验收证据
     - test_plan: 数组，测试计划
-    
+
     Pitch 提案内容：
     ---
     {pitch_content}
     ---
-    
+
     请严格返回合法的 JSON 数组，不要包含 ```json 等 Markdown 标记，直接返回内容。
     """
-    
+
     payload = {
         "prompt": prompt,
         "model": None
     }
-    
+
     try:
         # 使用 trust_env=False 避免本地代理报错 (socksio)
-        # 注意: raise_for_status() 内部调用 resp.json() 消费流, 不能重复调 resp.json()
         with httpx.Client(trust_env=False) as client:
             resp = client.post(url, json=payload, timeout=30.0)
             resp.raise_for_status()
@@ -92,20 +130,15 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
         if "[HITL]" in result_text or result_text.startswith("[ERROR]"):
             print("  ⚠️ LLM-Gateway 进入了 HITL 模式或报错，回退到 Mock 逻辑。")
             return _mock_extract(pitch_content)
-        
-        # 简单清理可能的 markdown
-        result_text = result_text.strip()
-        if result_text.startswith("```json"):
-            result_text = result_text[7:]
-        if result_text.startswith("```"):
-            result_text = result_text[3:]
-        if result_text.endswith("```"):
-            result_text = result_text[:-3]
-            
-        tasks = json.loads(result_text)
+
+        tasks = _parse_json_result(result_text)
+        if tasks is None:
+            print("  ⚠️ LLM-Gateway 返回内容无法解析为 JSON，回退到 Mock 逻辑。")
+            return _mock_extract(pitch_content)
+
         if not isinstance(tasks, list):
             tasks = [tasks]
-        
+
         print("  ✅ 成功通过 LLM-Gateway 完成智能拆解！")
         return tasks
     except Exception as e:
