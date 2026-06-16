@@ -33,9 +33,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     
     omo_dir = get_omo_dir(Path.cwd()) if args.adapter == "ecos" else Path.cwd()
-    workspace_root = omo_dir.parent
-    if omo_dir.name == ".omo":
-        if workspace_root.name == "omo":
+    if args.adapter == "local":
+        workspace_root = Path.cwd()
+    else:
+        workspace_root = omo_dir.parent
+        if omo_dir.name == ".omo" and workspace_root.name == "omo":
             workspace_root = workspace_root.parent.parent
             
     if args.command == "brainstorm":

@@ -206,6 +206,7 @@ def strategy_gc(base_dir: Path, adapter: str = "ecos") -> int:
 
     if not sandbox_dir.is_dir():
         print(f"   (Sandbox 目录 {sandbox_dir} 不存在, 跳过)")
+        print("✅ GC 完成。扫描 0 个, 清理 0 个滞留 Pitch。")
         return 0
 
     decayed_dir.mkdir(parents=True, exist_ok=True)
