@@ -211,6 +211,17 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     bet_id = f"BET-{hashlib.md5(source_file.name.encode()).hexdigest()[:4]}"
     desc = f"Bet: {source_file.stem} (Appetite: {appetite})"
 
+    # [C2G v4] BET ID 重用检测 — graceful skip
+    if adapter == "ecos":
+        goals_file = base_dir / "goals" / "current.yaml"
+        if goals_file.exists():
+            goals_data = yaml.safe_load(goals_file.read_text())
+            existing_ids = [g.get("id") for g in goals_data.get("goals", [])]
+            if bet_id in existing_ids:
+                print(f"  ⏭  Bet {bet_id} already exists, skip.")
+                print(f"✅ Bet 下注成功: 共创建了 0 个执行计划。")
+                return
+
     from .domain import BetSchema
     store.save_bet(BetSchema(goal_id=bet_id, title=source_file.stem, description=desc, appetite=appetite, created_at=_utc_now()))
 
