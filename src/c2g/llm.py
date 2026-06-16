@@ -75,19 +75,19 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     
     payload = {
         "prompt": prompt,
-        "model": "default"
+        "model": None
     }
     
     try:
         # 使用 trust_env=False 避免本地代理报错 (socksio)
+        # 注意: raise_for_status() 内部调用 resp.json() 消费流, 不能重复调 resp.json()
         with httpx.Client(trust_env=False) as client:
             resp = client.post(url, json=payload, timeout=30.0)
             resp.raise_for_status()
-            data = resp.json()
-        
-        # gateway 的返回格式是 {"content": "...", "model": "...", ...}
-        result_text = data.get("content", "")
-        
+            raw = resp.content
+            data = json.loads(raw)
+            result_text = data.get("content", "")
+
         # 兼容 AetherForge LLM-Gateway 在无可用模型时的 HITL 返回
         if "[HITL]" in result_text or result_text.startswith("[ERROR]"):
             print("  ⚠️ LLM-Gateway 进入了 HITL 模式或报错，回退到 Mock 逻辑。")
@@ -109,7 +109,9 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
         print("  ✅ 成功通过 LLM-Gateway 完成智能拆解！")
         return tasks
     except Exception as e:
+        import traceback
         print(f"  ⚠️ LLM-Gateway 请求失败或返回非预期格式: {e}，回退到 Mock 逻辑。")
+        traceback.print_exc()
         return _mock_extract(pitch_content)
 
 
