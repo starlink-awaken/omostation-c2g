@@ -14,15 +14,26 @@ def _utc_now() -> str:
 
 
 def _validate_ecos_task(task_data: dict) -> bool:
-    from omo.omo_task_schema import validate_task_data
+    import httpx
+    import json
 
-    validation_errors = validate_task_data(task_data, group="planned")
-    if validation_errors:
-        print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
-        for err in validation_errors:
-            print(f"     - {err}")
+    try:
+        response = httpx.post("http://localhost:9190/omo/validate-task", json=task_data, timeout=10.0)
+        response.raise_for_status()
+        result = response.json()
+        if not result.get("valid", False):
+            errors = result.get("errors", [])
+            print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
+            for err in errors:
+                print(f"     - {err}")
+            return False
+        return True
+    except httpx.HTTPError as e:
+        print(f"  ❌ M2 防腐层拦截 (HTTP Error: {e})")
         return False
-    return True
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"  ❌ M2 防腐层拦截 (Response Parse Error: {e})")
+        return False
 
 
 def _write_ecos_task(omo_dir: Path, task_id: str, task_data: dict) -> None:
