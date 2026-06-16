@@ -1,0 +1,45 @@
+# c2g — Architecture
+
+> **Layer**: X 横切框架  
+> **Role**: 战略需求引擎 — Concept-to-Goal / Pitch → Bet → Task  
+> **Stack**: Python 3.13+, uv, fastmcp, pydantic  
+> **Health**: smoke tests in tests/test_smoke.py
+>
+> 系统全景参见：[`docs/ARCHITECTURE-DIAGRAM.md`](../docs/ARCHITECTURE-DIAGRAM.md)
+
+---
+
+## 1. 内部架构
+
+```mermaid
+
+graph LR
+    Pitch[Pitch.md] --> C2G[c2g]
+    C2G --> Bridge[bridge.py]
+    Bridge --> Adapters[adapters.py]
+    Adapters --> OMO[.omo/tasks/]
+
+```
+
+## 2. 入口
+
+| Type | Entry | Port / Notes |
+|:--|:--|:--|
+| CLI | `c2g` | brainstorm/draft/bet/radar/gc |
+| MCP stdio | `c2g-mcp` | c2g_bet, c2g_radar, c2g_gc |
+
+## 3. 核心模块
+
+| Module | Responsibility |
+|:--|:--|
+| `src/c2g/cli.py` | CLI entry |
+| `src/c2g/mcp_server.py` | FastMCP server |
+| `src/c2g/bridge.py` | Pitch → Bet/Task import |
+| `src/c2g/strategy.py` | radar audit + gc |
+| `src/c2g/ports.py + adapters.py` | IOC + ecos/omo adapter |
+
+## 4. 测试
+
+```bash
+cd projects/c2g && uv run pytest tests/ -q
+```
