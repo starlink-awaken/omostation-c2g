@@ -77,20 +77,26 @@ def _collect_metrics(task_files: list[Path]) -> dict[str, Counter]:
     }
 
 
-def _check_anomalies(metrics: dict[str, Counter], total: int) -> list[str]:
-    """修真版异常告警: 修真前 mock 无任何告警. 现在按真实指标检查."""
+def _check_anomalies(metrics: dict[str, Counter], total: int, pending_metrics: dict[str, Counter] | None = None) -> list[str]:
+    """修真版异常告警: 修真前 mock 无任何告警. 现在按真实指标检查.
+
+    pending_metrics 仅含 planned/ 任务, 用于 P0/L3 堆积检测,
+    避免已完成的 P0 历史任务触发虚假告警.
+    """
     warnings: list[str] = []
     if total == 0:
         warnings.append("⚠️  没有 .omo/tasks/{done,planned}/*.yaml 数据, 战略审计无意义")
         return warnings
 
-    # 1. P0 任务堆积
-    p0_count = metrics["priority"].get("P0", 0)
+    pm = pending_metrics or metrics
+
+    # 1. P0 任务堆积 (仅计 pending)
+    p0_count = pm["priority"].get("P0", 0)
     if p0_count > 5:
         warnings.append(f"⚠️  P0 任务 {p0_count} 个, 超过阈值 5 (战略优先级可能失衡)")
 
-    # 2. L3 risk 存在 (高风险任务需关注)
-    l3_count = metrics["risk_level"].get("L3", 0)
+    # 2. L3 risk 存在 (仅计 pending, 高风险未完成任务需关注)
+    l3_count = pm["risk_level"].get("L3", 0)
     if l3_count > 0:
         warnings.append(f"⚠️  L3 高风险任务 {l3_count} 个, 需重点 review")
 
@@ -143,6 +149,7 @@ def strategy_audit(base_dir: Path, adapter: str = "ecos") -> int:
         return 0
 
     metrics = _collect_metrics(all_files)
+    pending_metrics = _collect_metrics(planned_files) if planned_files else None
 
     # 1. Priority 分布
     print()
@@ -177,7 +184,7 @@ def strategy_audit(base_dir: Path, adapter: str = "ecos") -> int:
     # 6. 异常告警 (修真版新功能)
     print()
     print("🚨 Anomaly Detection:")
-    warnings = _check_anomalies(metrics, total)
+    warnings = _check_anomalies(metrics, total, pending_metrics=pending_metrics)
     if not warnings:
         print("   ✅ 无异常")
     else:
