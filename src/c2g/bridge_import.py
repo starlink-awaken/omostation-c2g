@@ -259,7 +259,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
         if "> **Upstream**" in line:
             upstream = line.split(":", 1)[1].strip() if ":" in line else line.strip()
         if "**Appetite:**" in line:
-            appetite = line.replace("**Appetite:**", "").strip()
+            appetite = line.replace("**Appetite:**", "").strip().lstrip(">").strip()
 
     if not upstream:
         print("  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch 缺乏 Upstream 锚点，拒绝转化为 Bet。请在文档头部声明 `> **Upstream**: MS-XXX`。")
