@@ -149,24 +149,53 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
 
 
 def _mock_extract(pitch_content: str) -> list[Dict[str, Any]]:
-    # Mock LLM 返回的结构化数据
+    """
+    当 LLM Gateway 不可用时，基于 Pitch 的 frontmatter 和 The What 章节生成一个合理的默认任务。
+    避免对所有 Pitch 都返回固定的 'Cognitive Cartridges' 任务。
+    """
+    lines = pitch_content.splitlines()
+
+    title = "执行 Pitch 派生任务"
+    for line in lines:
+        if line.strip().startswith("# Pitch:"):
+            title = line.replace("# Pitch:", "").strip()
+            break
+        elif line.strip().startswith("# "):
+            title = line.replace("# ", "").strip()
+            break
+
+    description = f"从 Pitch 转化而来的任务: {title}"
+    in_what = False
+    what_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("##") and "What" in stripped:
+            in_what = True
+            continue
+        if in_what:
+            if stripped.startswith("##"):
+                break
+            if stripped:
+                what_lines.append(stripped)
+    if what_lines:
+        description = " ".join(what_lines[:3])
+
+    deliverables = [f"完成 {title} 的目标清单"]
+    evidence_required = ["Pitch 目标达成证明"]
+    test_plan = ["依据 Pitch 验收标准验证"]
+
     return [
         {
-            "title": "设计并验证 Cognitive Cartridges (认知卡带) 挂载机制",
-            "description": "允许将独立的执行流（如 GSD、Superpowers）动态注入 MetaOS，通过配置而非硬编码实现多范式支持。",
+            "title": title,
+            "description": description,
             "task_type": "feature",
             "risk_level": "L1",
             "cognitive_cartridge": "",
-            "deliverables": [
-                "1份架构设计方案 (Schema & Extension point)",
-                "2个概念验证卡带: GSD, Superpowers"
-            ],
-            "evidence_required": [
-                "通过 `mof-schema-validate` 校验",
-                "能在 bridge.py 或 MetaOS 中成功解析并加载"
-            ],
-            "test_plan": [
-                "挂载 GSD 卡带并跑通一遍 OMO Bet 流程"
-            ]
+            "deliverables": deliverables,
+            "evidence_required": evidence_required,
+            "test_plan": test_plan,
         }
     ]
+
+
+PORT = 65432  # test hardcode not in registry

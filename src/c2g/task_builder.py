@@ -5,6 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 
+def _governance_refs() -> list[str]:
+    return [
+        ".omo/standards/omo-governance-surfaces.md",
+        ".omo/_truth/registry/omo-governance-surfaces.yaml",
+        ".omo/_truth/x1-governance-policies.yaml",
+        ".omo/_truth/x2-freshness-rules.yaml",
+        ".omo/_truth/x3-value-stack.yaml",
+        ".omo/_truth/x4-consistency-rules.yaml",
+    ]
+
+
 def build_ecos_task(
     task_id: str,
     title: str,
@@ -40,14 +51,23 @@ def build_ecos_task(
         "review_ref": None,
         "knowledge_refs": [],
         "handoff_refs": [],
+        "governance_refs": _governance_refs(),
         "entry_gate": entry_gate or [],
         "evidence_required": evidence_required or [],
         "test_plan": test_plan or [],
         "allowed_operation_level": "L0",
         "human_approval_required": False,
+        "metadata": {
+            "governance_stack": "state_plane.kernel_plane.ingress_plane",
+            "ingress_plane": "projects/c2g",
+        },
     }
     if extra:
-        task.update(extra)
+        extra_payload = dict(extra)
+        metadata_extra = extra_payload.pop("metadata", None)
+        task.update(extra_payload)
+        if isinstance(metadata_extra, dict):
+            task["metadata"].update(metadata_extra)
     return task
 
 
@@ -79,6 +99,9 @@ def build_local_task(
             "source_docs": source_docs or [],
             "context_uri": context_uri or f"bos://memory/tasks/{task_id}",
             "imported_via": imported_via,
+            "governance_refs": _governance_refs(),
+            "governance_stack": "state_plane.kernel_plane.ingress_plane",
+            "ingress_plane": "projects/c2g",
         },
     }
     if extra:

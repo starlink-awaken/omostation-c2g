@@ -77,7 +77,13 @@ def _collect_metrics(task_files: list[Path]) -> dict[str, Counter]:
     }
 
 
-def _check_anomalies(metrics: dict[str, Counter], total: int, pending_metrics: dict[str, Counter] | None = None) -> list[str]:
+def _check_anomalies(
+    metrics: dict[str, Counter],
+    total: int,
+    *,
+    omo_dir: Path,
+    pending_metrics: dict[str, Counter] | None = None,
+) -> list[str]:
     """修真版异常告警: 修真前 mock 无任何告警. 现在按真实指标检查.
 
     pending_metrics 仅含 planned/ 任务, 用于 P0/L3 堆积检测,
@@ -112,7 +118,7 @@ def _check_anomalies(metrics: dict[str, Counter], total: int, pending_metrics: d
             )
 
     # 4. done task 7d 内 0 个 (战略停滞)
-    done_dir = (Path(".omo") / "tasks" / "done")
+    done_dir = omo_dir / "tasks" / "done"
     if done_dir.is_dir():
         recent_count = 0
         now = time.time()
@@ -184,7 +190,7 @@ def strategy_audit(base_dir: Path, adapter: str = "ecos") -> int:
     # 6. 异常告警 (修真版新功能)
     print()
     print("🚨 Anomaly Detection:")
-    warnings = _check_anomalies(metrics, total, pending_metrics=pending_metrics)
+    warnings = _check_anomalies(metrics, total, omo_dir=omo_dir, pending_metrics=pending_metrics)
     if not warnings:
         print("   ✅ 无异常")
     else:

@@ -3,7 +3,8 @@
 > **Layer**: X 横切框架  
 > **Role**: 战略需求引擎 — Concept-to-Goal / Pitch → Bet → Task  
 > **Stack**: Python 3.13+, uv, fastmcp, pydantic  
-> **Health**: smoke tests in tests/test_smoke.py
+> **Health**: See local CI and smoke verification
+> **SSOT**: 运行时健康、入口成熟度以本项目 CI、smoke 验证和 workspace governance SSOT 为准
 >
 > 系统全景参见：[`docs/ARCHITECTURE-DIAGRAM.md`](../docs/ARCHITECTURE-DIAGRAM.md)
 

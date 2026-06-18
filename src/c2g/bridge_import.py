@@ -1,6 +1,7 @@
-from pathlib import Path
-from datetime import UTC, datetime
 import hashlib
+from datetime import UTC, datetime
+from pathlib import Path
+import importlib.util
 
 import yaml
 
@@ -9,38 +10,70 @@ from .bridge_depend import _resolve_depends_on
 from .task_builder import build_ecos_task, build_local_task
 
 
+def _load_omo_module(module_name: str):
+    try:
+        return __import__(module_name, fromlist=["*"])
+    except ImportError:
+        workspace_projects = Path(__file__).resolve().parents[3]
+        leaf = module_name.rsplit(".", 1)[-1]
+        module_path = workspace_projects / "omo" / "src" / "omo" / f"{leaf}.py"
+        if not module_path.exists():
+            raise
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+
 def _utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _validate_ecos_task(task_data: dict) -> bool:
-    import httpx
-    import json
-
     try:
-        response = httpx.post("http://localhost:9190/omo/validate-task", json=task_data, timeout=10.0)
-        response.raise_for_status()
-        result = response.json()
-        if not result.get("valid", False):
-            errors = result.get("errors", [])
+        validate_task_data = _load_omo_module("omo.omo_task_schema").validate_task_data
+
+        errors = validate_task_data(task_data, group="planned")
+        if errors:
             print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
             for err in errors:
                 print(f"     - {err}")
             return False
         return True
-    except httpx.HTTPError as e:
-        print(f"  ❌ M2 防腐层拦截 (HTTP Error: {e})")
-        return False
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"  ❌ M2 防腐层拦截 (Response Parse Error: {e})")
-        return False
+    except ImportError:
+        import httpx
+        import json
+
+        try:
+            response = httpx.post("http://localhost:9190/omo/validate-task", json=task_data, timeout=10.0)
+            response.raise_for_status()
+            result = response.json()
+            if not result.get("valid", False):
+                errors = result.get("errors", [])
+                print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
+                for err in errors:
+                    print(f"     - {err}")
+                return False
+            return True
+        except httpx.HTTPError as e:
+            print(f"  ❌ M2 防腐层拦截 (HTTP Error: {e})")
+            return False
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"  ❌ M2 防腐层拦截 (Response Parse Error: {e})")
+            return False
 
 
 def _write_ecos_task(omo_dir: Path, task_id: str, task_data: dict) -> None:
-    planned_dir = omo_dir / "tasks" / "planned"
-    planned_dir.mkdir(parents=True, exist_ok=True)
-    task_file = planned_dir / f"{task_id}.yaml"
-    task_file.write_text(yaml.dump(task_data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    create_planned_task = _load_omo_module("omo.omo_ingress").create_planned_task
+
+    create_planned_task(
+        omo_dir,
+        task_data=task_data,
+        ingress_plane="projects/c2g",
+        source_ref=f"c2g:bridge-import:{task_id}",
+    )
 
 
 def _save_local_task(base_dir: Path, task_data: dict, adapter: str) -> bool:
@@ -206,9 +239,23 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     content = source_file.read_text(encoding="utf-8")
 
     # [C2G v4] CR-STRATEGY-01 孤儿拦截约束
+    # 解析文档头部的 blockquote frontmatter，跳过开头的标题/空行；
+    # 一旦进入 frontmatter 区域（遇到 blockquote 行），连续读取直到非 blockquote 行。
+    # 这样避免被正文中的同名列表项覆盖。
     upstream = None
     appetite = "Unknown"
+    in_frontmatter = False
     for line in content.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(">"):
+            in_frontmatter = True
+        elif in_frontmatter:
+            break
+        else:
+            # 跳过标题、元数据行前导内容
+            continue
         if "> **Upstream**" in line:
             upstream = line.split(":", 1)[1].strip() if ":" in line else line.strip()
         if "**Appetite:**" in line:
