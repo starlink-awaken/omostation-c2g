@@ -33,9 +33,10 @@ graph LR
 
 | Module | Responsibility |
 |:--|:--|
-| `src/c2g/cli.py` | CLI entry |
+| `src/c2g/cli.py` | CLI entry (`brainstorm` / `bet` / `radar` / `gc`) |
 | `src/c2g/mcp_server.py` | FastMCP server |
-| `src/c2g/bridge.py` | Pitch → Bet/Task import |
+| `src/c2g/bridge.py` | Legacy Pitch → Bet/Task import |
+| `src/c2g/bridge_import.py` | [C2G v4] Pitch frontmatter parsing + Bet/Task materialization |
 | `src/c2g/strategy.py` | radar audit + gc |
 | `src/c2g/ports.py + adapters.py` | IOC + ecos/omo adapter |
 

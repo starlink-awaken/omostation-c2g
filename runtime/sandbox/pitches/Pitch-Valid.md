@@ -1,3 +1,6 @@
+> **Upstream**: MS-COGNITIVE-001
+> **Appetite:** 2 weeks
+
 # Pitch: 认知卡带动态挂载机制
 
 ## 背景

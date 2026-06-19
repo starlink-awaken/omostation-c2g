@@ -30,15 +30,34 @@ pip install c2g[ecos]
 C2G 默认支持双引擎驱动：通用本地版 (`local`) 与 深度定制版 (`ecos`)。
 
 ```bash
-# 1. 尝试将你的 Pitch 转化为可执行 Bet (使用默认本地适配器)
-c2g --adapter local bet ./pitches/MyGreatIdea.md
+# 1. [V2P] 从一个模糊话题 brainstorm 出结构化 Pitch
+c2g --adapter local brainstorm "AI 驱动的代码审查助手"
+# -> 生成 pitches/Idea-ai-driven-de-code-review-assistant.md
 
-# 2. 启动战略雷达，审查当前的 Bet 偏离度
+# 2. 将 Pitch 转化为可执行 Bet (使用默认本地适配器)
+c2g --adapter local bet ./pitches/Idea-ai-driven-de-code-review-assistant.md
+
+# 3. 启动战略雷达，审查当前的 Bet 偏离度
 c2g --adapter local radar
 
-# 3. 运行熵减 GC，清理过期的无用点子
+# 4. 运行熵减 GC，清理过期的无用点子
 c2g --adapter local gc --dry-run
 ```
+
+## 📝 Pitch Frontmatter 格式
+
+为了让 `c2g bet` 正确识别提案的上游锚点与食欲边界，Pitch 头部需要包含连续的 blockquote frontmatter：
+
+```markdown
+> **Upstream**: MS-001
+> **Appetite:** 3 days
+
+# Pitch: AI 驱动的代码审查助手
+...
+```
+
+- `Upstream`：必填，指向父级 Milestone / Goal（避免孤儿 Bet）。
+- `Appetite`：选填，默认 `Unknown`，用于 Bet 边界控制。
 
 ## 🏗️ 架构解析 (Architecture)
 
