@@ -4,3 +4,4 @@
 __pycache__/
 *.pyc
 .omc/
+.c2g_data/
