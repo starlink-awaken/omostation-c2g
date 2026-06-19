@@ -277,7 +277,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
             existing_ids = [g.get("id") for g in goals_data.get("goals", [])]
             if bet_id in existing_ids:
                 print(f"  ⏭  Bet {bet_id} already exists, skip.")
-                print(f"✅ Bet 下注成功: 共创建了 0 个执行计划。")
+                print("✅ Bet 下注成功: 共创建了 0 个执行计划。")
                 return
 
     from .domain import BetSchema
