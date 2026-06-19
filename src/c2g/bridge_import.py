@@ -1,4 +1,5 @@
 import hashlib
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 import importlib.util
@@ -8,6 +9,37 @@ import yaml
 from .bridge_id import _generate_task_id, _infer_phase_wave
 from .bridge_depend import _resolve_depends_on
 from .task_builder import build_ecos_task, build_local_task
+
+
+def _parse_pitch_frontmatter(content: str) -> tuple[str | None, str]:
+    """Parse leading blockquote frontmatter for Upstream and Appetite.
+
+    Only the first contiguous blockquote block at the top of the document is
+    inspected, so body sections like `## Boundaries & Appetites` cannot shadow
+    the real frontmatter values.
+    """
+    lines = content.splitlines()
+    frontmatter_lines: list[str] = []
+    in_frontmatter = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if in_frontmatter:
+                break
+            continue
+        if stripped.startswith(">"):
+            in_frontmatter = True
+            frontmatter_lines.append(stripped)
+        elif in_frontmatter:
+            break
+        # Skip leading title/comment lines before the frontmatter block.
+
+    text = "\n".join(frontmatter_lines)
+    upstream_match = re.search(r"^>\s*\*\*Upstream\*\*:\s*(.+)$", text, re.MULTILINE)
+    appetite_match = re.search(r"^>\s*\*\*Appetite:\*\*\s*(.+)$", text, re.MULTILINE)
+    upstream = upstream_match.group(1).strip() if upstream_match else None
+    appetite = appetite_match.group(1).strip() if appetite_match else "Unknown"
+    return upstream, appetite
 
 
 def _load_omo_module(module_name: str):
@@ -239,27 +271,8 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     content = source_file.read_text(encoding="utf-8")
 
     # [C2G v4] CR-STRATEGY-01 孤儿拦截约束
-    # 解析文档头部的 blockquote frontmatter，跳过开头的标题/空行；
-    # 一旦进入 frontmatter 区域（遇到 blockquote 行），连续读取直到非 blockquote 行。
-    # 这样避免被正文中的同名列表项覆盖。
-    upstream = None
-    appetite = "Unknown"
-    in_frontmatter = False
-    for line in content.split("\n"):
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith(">"):
-            in_frontmatter = True
-        elif in_frontmatter:
-            break
-        else:
-            # 跳过标题、元数据行前导内容
-            continue
-        if "> **Upstream**" in line:
-            upstream = line.split(":", 1)[1].strip() if ":" in line else line.strip()
-        if "**Appetite:**" in line:
-            appetite = line.replace("**Appetite:**", "").strip().lstrip(">").strip()
+    # 用正则解析文档头部连续 blockquote frontmatter，避免被正文同名列表项覆盖。
+    upstream, appetite = _parse_pitch_frontmatter(content)
 
     if not upstream:
         print("  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch 缺乏 Upstream 锚点，拒绝转化为 Bet。请在文档头部声明 `> **Upstream**: MS-XXX`。")

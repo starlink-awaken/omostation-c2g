@@ -197,5 +197,3 @@ def _mock_extract(pitch_content: str) -> list[Dict[str, Any]]:
         }
     ]
 
-
-PORT = 65432  # test hardcode not in registry
