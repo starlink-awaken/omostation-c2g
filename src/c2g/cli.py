@@ -41,8 +41,30 @@ def main(argv: list[str] | None = None) -> int:
             workspace_root = workspace_root.parent.parent
             
     if args.command == "brainstorm":
-        print(f"🧠 [V2P] 正在拉起 MetaOS 针对主题 '{args.topic}' 进行发散...")
-        print("  -> (Mock) 提案生成成功，已存入 runtime/sandbox/pitches/")
+        # 修真 v1 (产品走查 2026-06-19): Mock print → 真生成 Pitch 文件
+        # KISS: 不集成 MetaOS (YAGNI), 用模板生成结构化 Pitch, 打通想法→Pitch→Bet 第一步
+        import re
+        safe_topic = re.sub(r'[^a-zA-Z0-9一-龥]+', '-', args.topic)[:30].strip('-')
+        file_name = f"Idea-{safe_topic}.md"
+        if args.adapter == "ecos":
+            pitches_dir = workspace_root / "runtime" / "sandbox" / "pitches"
+        else:
+            pitches_dir = Path.cwd() / ".c2g_data" / "pitches"
+        pitches_dir.mkdir(parents=True, exist_ok=True)
+        pitch_path = pitches_dir / file_name
+        if pitch_path.exists():
+            print(f"ℹ️  Pitch 已存在: {pitch_path} (用 draft 补细节, 或直接 bet)")
+            return 0
+        content = (
+            f"# {args.topic}\n\n"
+            f"> **Upstream**: (待填 — bet 前必须声明北极星, 否则 CR-STRATEGY-01 孤儿拦截)\n"
+            f"> **Appetite:** (待填 — e.g. 2小时 / 1天 / 1周)\n\n"
+            f"## 背景与上下文\n(brainstorm 自动生成, 补充: 为什么想做? 解决什么痛点?)\n\n"
+            f"## 目标\n- \n\n## NoGos (YAGNI)\n- \n"
+        )
+        pitch_path.write_text(content, encoding="utf-8")
+        print(f"🧠 [V2P] brainstorm 真生成 Pitch: {pitch_path}")
+        print(f"➡️ 下一步: 编辑补 Upstream/Appetite → `c2g --adapter ecos bet {pitch_path.resolve()}`")
         
     elif args.command == "draft":
         print("\n🧠 [C2G 战略向导] 让我们把模糊的点子变成具体的行动：")
