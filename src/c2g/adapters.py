@@ -157,11 +157,24 @@ class EcosStorageProvider(IStorageProvider):
         return False
 
     def get_active_bets(self) -> List[BetSchema]:
-        # Minimal mock for radar
-        return [
-            BetSchema(goal_id="BET-1", title="Indie Efficiency", description="", vector="V1", created_at=""),
-            BetSchema(goal_id="BET-2", title="Agent Autonomy", description="", vector="V2", created_at="")
-        ]
+        goals_file = self.omo_dir / "goals" / "current.yaml"
+        if not goals_file.exists():
+            return []
+        data = yaml.safe_load(goals_file.read_text(encoding="utf-8")) or {}
+        bets = []
+        for g in data.get("goals", []):
+            gid = g.get("id", "")
+            if not gid.startswith("BET-"):
+                continue
+            bets.append(BetSchema(
+                goal_id=gid,
+                title=g.get("title") or g.get("desc", gid),
+                description=g.get("desc", ""),
+                vector=g.get("vector", "V1"),
+                created_at=g.get("created_at", ""),
+                appetite=g.get("appetite", ""),
+            ))
+        return bets
 
 def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):
     """
