@@ -1,5 +1,4 @@
 """Tests for BET ID reuse detection (graceful skip)."""
-import pytest
 import subprocess
 from pathlib import Path
 

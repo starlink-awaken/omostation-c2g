@@ -1,15 +1,13 @@
-import pytest
 from collections import Counter
 from pathlib import Path
 from c2g.domain import PitchSchema
 from c2g.adapters import EcosGovernanceProvider, EcosStorageProvider
-from c2g.adapters_local import LocalGovernanceProvider, LocalStorageProvider
+from c2g.adapters_local import LocalGovernanceProvider
 from c2g.bridge_import import _write_ecos_task
 from c2g.bridge_utils import get_omo_dir
 from c2g.strategy import _check_anomalies
 from c2g.task_builder import build_ecos_task
 import subprocess
-import sys
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
