@@ -1,0 +1,137 @@
+[
+  {
+    "task_id": "IMPORTED-995915",
+    "title": "Phase 44 债务治理收敛 wf-convergence 关闭 + drift 修复",
+    "description": "从 Pitch 转化而来的任务: Phase 44 债务治理收敛 wf-convergence 关闭 + drift 修复",
+    "status": "planned",
+    "priority": "P1",
+    "assignee": "unassigned",
+    "tags": [],
+    "created_at": "2026-06-22T04:01:47Z",
+    "updated_at": "2026-06-22T04:01:47Z",
+    "metadata": {
+      "depends_on": [],
+      "source_docs": [
+        "/Users/xiamingxing/Workspace/projects/c2g/.c2g_data/pitches/Idea-Phase-44-债务治理收敛-wf-convergence.md"
+      ],
+      "context_uri": "bos://memory/sandbox/pitches/Idea-Phase-44-债务治理收敛-wf-convergence.md",
+      "imported_via": "omo_bridge_pitch",
+      "governance_refs": [
+        ".omo/standards/omo-governance-surfaces.md",
+        ".omo/_truth/registry/omo-governance-surfaces.yaml",
+        ".omo/_truth/x1-governance-policies.yaml",
+        ".omo/_truth/x2-freshness-rules.yaml",
+        ".omo/_truth/x3-value-stack.yaml",
+        ".omo/_truth/x4-consistency-rules.yaml"
+      ],
+      "governance_stack": "state_plane.kernel_plane.ingress_plane",
+      "ingress_plane": "projects/c2g",
+      "task_type": "feature",
+      "risk_level": "L1",
+      "deliverables": [
+        "完成 Phase 44 债务治理收敛 wf-convergence 关闭 + drift 修复 的目标清单"
+      ],
+      "evidence_required": [
+        "Pitch 目标达成证明"
+      ],
+      "test_plan": [
+        "依据 Pitch 验收标准验证"
+      ],
+      "wait_for_gate": [
+        "BET_APPROVED"
+      ],
+      "bet_id": "BET-d6d9",
+      "cognitive_cartridge": ""
+    }
+  },
+  {
+    "task_id": "IMPORTED-eea6d0",
+    "title": "P45 文档生命周期治理 — 死文档识别 + 知识图谱 + 自动归档建议",
+    "description": "从 Pitch 转化而来的任务: P45 文档生命周期治理 — 死文档识别 + 知识图谱 + 自动归档建议",
+    "status": "planned",
+    "priority": "P1",
+    "assignee": "unassigned",
+    "tags": [],
+    "created_at": "2026-06-22T07:53:29Z",
+    "updated_at": "2026-06-22T07:53:29Z",
+    "metadata": {
+      "depends_on": [],
+      "source_docs": [
+        "/Users/xiamingxing/Workspace/projects/c2g/.c2g_data/pitches/Idea-P45-文档生命周期治理-死文档识别-知识图谱-自动归档建议.md"
+      ],
+      "context_uri": "bos://memory/sandbox/pitches/Idea-P45-文档生命周期治理-死文档识别-知识图谱-自动归档建议.md",
+      "imported_via": "omo_bridge_pitch",
+      "governance_refs": [
+        ".omo/standards/omo-governance-surfaces.md",
+        ".omo/_truth/registry/omo-governance-surfaces.yaml",
+        ".omo/_truth/x1-governance-policies.yaml",
+        ".omo/_truth/x2-freshness-rules.yaml",
+        ".omo/_truth/x3-value-stack.yaml",
+        ".omo/_truth/x4-consistency-rules.yaml"
+      ],
+      "governance_stack": "state_plane.kernel_plane.ingress_plane",
+      "ingress_plane": "projects/c2g",
+      "task_type": "feature",
+      "risk_level": "L1",
+      "deliverables": [
+        "完成 P45 文档生命周期治理 — 死文档识别 + 知识图谱 + 自动归档建议 的目标清单"
+      ],
+      "evidence_required": [
+        "Pitch 目标达成证明"
+      ],
+      "test_plan": [
+        "依据 Pitch 验收标准验证"
+      ],
+      "wait_for_gate": [
+        "BET_APPROVED"
+      ],
+      "bet_id": "BET-8570",
+      "cognitive_cartridge": ""
+    }
+  },
+  {
+    "task_id": "IMPORTED-35c56a",
+    "title": "P0 完整门户: cockpit 6 生活场景深度入口 (财务命令/健康域/family-hub 集成), 从 MVP 首屏到真一等公民",
+    "description": "从 Pitch 转化而来的任务: P0 完整门户: cockpit 6 生活场景深度入口 (财务命令/健康域/family-hub 集成), 从 MVP 首屏到真一等公民",
+    "status": "planned",
+    "priority": "P1",
+    "assignee": "unassigned",
+    "tags": [],
+    "created_at": "2026-06-23T02:33:11Z",
+    "updated_at": "2026-06-23T02:33:11Z",
+    "metadata": {
+      "depends_on": [],
+      "source_docs": [
+        "/Users/xiamingxing/Workspace/projects/c2g/.c2g_data/pitches/Idea-P0-完整门户-cockpit-6-生活场景深度入口-财务命.md"
+      ],
+      "context_uri": "bos://memory/sandbox/pitches/Idea-P0-完整门户-cockpit-6-生活场景深度入口-财务命.md",
+      "imported_via": "omo_bridge_pitch",
+      "governance_refs": [
+        ".omo/standards/omo-governance-surfaces.md",
+        ".omo/_truth/registry/omo-governance-surfaces.yaml",
+        ".omo/_truth/x1-governance-policies.yaml",
+        ".omo/_truth/x2-freshness-rules.yaml",
+        ".omo/_truth/x3-value-stack.yaml",
+        ".omo/_truth/x4-consistency-rules.yaml"
+      ],
+      "governance_stack": "state_plane.kernel_plane.ingress_plane",
+      "ingress_plane": "projects/c2g",
+      "task_type": "feature",
+      "risk_level": "L1",
+      "deliverables": [
+        "完成 P0 完整门户: cockpit 6 生活场景深度入口 (财务命令/健康域/family-hub 集成), 从 MVP 首屏到真一等公民 的目标清单"
+      ],
+      "evidence_required": [
+        "Pitch 目标达成证明"
+      ],
+      "test_plan": [
+        "依据 Pitch 验收标准验证"
+      ],
+      "wait_for_gate": [
+        "BET_APPROVED"
+      ],
+      "bet_id": "BET-8b48",
+      "cognitive_cartridge": ""
+    }
+  }
+]

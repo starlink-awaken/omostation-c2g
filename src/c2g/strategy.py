@@ -155,7 +155,10 @@ def strategy_audit(base_dir: Path, adapter: str = "ecos") -> int:
         return 0
 
     metrics = _collect_metrics(all_files)
-    pending_metrics = _collect_metrics(planned_files) if planned_files else None
+    # P52 fix: planned 为空时也返回空 metrics (non-empty dict, 各 Counter 为空),
+    # 避免 L97 `pm = pending_metrics or metrics` fallback 到全量 (含 done) 导致
+    # done L3 任务误报 "高风险需 review". 语义: pending L3=0 不告警.
+    pending_metrics = _collect_metrics(planned_files)
 
     # 1. Priority 分布
     print()

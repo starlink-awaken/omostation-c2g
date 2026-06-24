@@ -12,16 +12,25 @@ import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+
 def test_domain_schema():
-    pitch = PitchSchema(pitch_id="1", title="Test", content="Data", created_at="2026-06-15")
+    pitch = PitchSchema(
+        pitch_id="1", title="Test", content="Data", created_at="2026-06-15"
+    )
     assert pitch.title == "Test"
+
 
 def test_local_governance():
     gov = LocalGovernanceProvider()
-    pitch = PitchSchema(pitch_id="1", title="Test", content="Data", created_at="2026-06-15")
+    pitch = PitchSchema(
+        pitch_id="1", title="Test", content="Data", created_at="2026-06-15"
+    )
     assert gov.validate_pitch(pitch) is True
-    pitch_short = PitchSchema(pitch_id="1", title="Te", content="Data", created_at="2026-06-15")
+    pitch_short = PitchSchema(
+        pitch_id="1", title="Te", content="Data", created_at="2026-06-15"
+    )
     assert gov.validate_pitch(pitch_short) is False
+
 
 def test_cli_help():
     result = subprocess.run(
@@ -33,6 +42,7 @@ def test_cli_help():
     assert result.returncode == 0
     assert "brainstorm" in result.stdout
 
+
 def test_cli_local_radar():
     result = subprocess.run(
         ["uv", "run", "--project", ".", "c2g", "--adapter", "local", "radar"],
@@ -42,6 +52,7 @@ def test_cli_local_radar():
     )
     assert result.returncode == 0
     assert "Strategic Audit" in result.stdout or "Task Inventory" in result.stdout
+
 
 def test_cli_local_gc():
     result = subprocess.run(
@@ -63,7 +74,9 @@ def test_build_ecos_task_includes_governance_refs():
         test_plan=["pytest"],
     )
     assert ".omo/standards/omo-governance-surfaces.md" in task["governance_refs"]
-    assert ".omo/_truth/registry/omo-governance-surfaces.yaml" in task["governance_refs"]
+    assert (
+        ".omo/_truth/registry/omo-governance-surfaces.yaml" in task["governance_refs"]
+    )
     assert task["metadata"]["ingress_plane"] == "projects/c2g"
 
 
@@ -128,7 +141,9 @@ def test_ecos_storage_provider_save_bet_uses_omo_ingress(tmp_path: Path):
     )
     store.save_bet(bet)
 
-    goals_payload = yaml.safe_load((goals_dir / "current.yaml").read_text(encoding="utf-8"))
+    goals_payload = yaml.safe_load(
+        (goals_dir / "current.yaml").read_text(encoding="utf-8")
+    )
     assert any(goal["id"] == "BET-aa11" for goal in goals_payload["goals"])
     assert (omo_dir / "_delivery" / "ingress" / "goals" / "BET-aa11.yaml").exists()
 
@@ -146,4 +161,6 @@ def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
     _write_ecos_task(omo_dir, "IMPORTED-broker", task_data)
 
     assert (omo_dir / "tasks" / "planned" / "IMPORTED-broker.yaml").exists()
-    assert (omo_dir / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml").exists()
+    assert (
+        omo_dir / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml"
+    ).exists()

@@ -1,0 +1,38 @@
+[
+  {
+    "goal_id": "BET-12e3",
+    "title": "Idea-修复-4-项-closure-漂移-为-deferred-项",
+    "description": "Bet: Idea-修复-4-项-closure-漂移-为-deferred-项 (Appetite: 2 hours)",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "2 hours",
+    "created_at": "2026-06-20T05:21:58Z"
+  },
+  {
+    "goal_id": "BET-d6d9",
+    "title": "Idea-Phase-44-债务治理收敛-wf-convergence",
+    "description": "Bet: Idea-Phase-44-债务治理收敛-wf-convergence (Appetite: 1 day)",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "1 day",
+    "created_at": "2026-06-22T04:01:47Z"
+  },
+  {
+    "goal_id": "BET-8570",
+    "title": "Idea-P45-文档生命周期治理-死文档识别-知识图谱-自动归档建议",
+    "description": "Bet: Idea-P45-文档生命周期治理-死文档识别-知识图谱-自动归档建议 (Appetite: 1.5 day)",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "1.5 day",
+    "created_at": "2026-06-22T07:53:29Z"
+  },
+  {
+    "goal_id": "BET-8b48",
+    "title": "Idea-P0-完整门户-cockpit-6-生活场景深度入口-财务命",
+    "description": "Bet: Idea-P0-完整门户-cockpit-6-生活场景深度入口-财务命 (Appetite: 2周 (roadmap BET-6, 跨项目: cockpit + family-hub + 域))",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "2周 (roadmap BET-6, 跨项目: cockpit + family-hub + 域)",
+    "created_at": "2026-06-23T02:33:11Z"
+  }
+]

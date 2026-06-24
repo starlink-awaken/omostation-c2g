@@ -2,12 +2,12 @@ import hashlib
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-import importlib.util
 
 import yaml
 
 from .bridge_id import _generate_task_id, _infer_phase_wave
 from .bridge_depend import _resolve_depends_on
+from .omo_client import create_planned_task_via_broker, validate_planned_task_data
 from .task_builder import build_ecos_task, build_local_task
 
 
@@ -42,32 +42,13 @@ def _parse_pitch_frontmatter(content: str) -> tuple[str | None, str]:
     return upstream, appetite
 
 
-def _load_omo_module(module_name: str):
-    try:
-        return __import__(module_name, fromlist=["*"])
-    except ImportError:
-        workspace_projects = Path(__file__).resolve().parents[3]
-        leaf = module_name.rsplit(".", 1)[-1]
-        module_path = workspace_projects / "omo" / "src" / "omo" / f"{leaf}.py"
-        if not module_path.exists():
-            raise
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        if spec is None or spec.loader is None:
-            raise
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-
-
 def _utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _validate_ecos_task(task_data: dict) -> bool:
     try:
-        validate_task_data = _load_omo_module("omo.omo_task_schema").validate_task_data
-
-        errors = validate_task_data(task_data, group="planned")
+        errors = validate_planned_task_data(task_data)
         if errors:
             print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
             for err in errors:
@@ -79,7 +60,9 @@ def _validate_ecos_task(task_data: dict) -> bool:
         import json
 
         try:
-            response = httpx.post("http://localhost:9190/omo/validate-task", json=task_data, timeout=10.0)
+            response = httpx.post(
+                "http://localhost:9190/omo/validate-task", json=task_data, timeout=10.0
+            )
             response.raise_for_status()
             result = response.json()
             if not result.get("valid", False):
@@ -98,12 +81,9 @@ def _validate_ecos_task(task_data: dict) -> bool:
 
 
 def _write_ecos_task(omo_dir: Path, task_id: str, task_data: dict) -> None:
-    create_planned_task = _load_omo_module("omo.omo_ingress").create_planned_task
-
-    create_planned_task(
+    create_planned_task_via_broker(
         omo_dir,
         task_data=task_data,
-        ingress_plane="projects/c2g",
         source_ref=f"c2g:bridge-import:{task_id}",
     )
 
@@ -121,7 +101,9 @@ def _save_local_task(base_dir: Path, task_data: dict, adapter: str) -> bool:
     return True
 
 
-def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapter: str = "ecos"):
+def _import_bmad(
+    file_path: Path, omo_dir: Path, sequential: bool = False, adapter: str = "ecos"
+):
     print(f"🌉 正在将 BMAD / OpenSpec 规范转换为 OMO Planned Tasks: {file_path}")
     content = file_path.read_text(encoding="utf-8")
     tasks_created = 0
@@ -197,7 +179,8 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
 
         if adapter == "ecos":
             task_data = build_ecos_task(
-                task_id, task_title,
+                task_id,
+                task_title,
                 depends_on=depends_on,
                 source_docs=[str(file_path.absolute())],
                 evidence_required=evidence_parsed,
@@ -210,7 +193,8 @@ def _import_bmad(file_path: Path, omo_dir: Path, sequential: bool = False, adapt
             _write_ecos_task(omo_dir, task_id, task_data)
         else:
             task_data = build_local_task(
-                task_id, task_title,
+                task_id,
+                task_title,
                 description=f"Imported from {file_path.name}",
                 depends_on=depends_on,
                 source_docs=[str(file_path.absolute())],
@@ -239,7 +223,8 @@ def _import_fast_track(source_topic: Path, omo_dir: Path, adapter: str = "ecos")
 
     if adapter == "ecos":
         task_data = build_ecos_task(
-            task_id, str(source_topic.name),
+            task_id,
+            str(source_topic.name),
             context_uri=f"bos://memory/fast-track/{task_id}",
             source_docs=["bos://memory/fast-track/virtual-doc"],
             entry_gate=["FAST_TRACK_L0"],
@@ -250,7 +235,8 @@ def _import_fast_track(source_topic: Path, omo_dir: Path, adapter: str = "ecos")
         _write_ecos_task(omo_dir, task_id, task_data)
     else:
         task_data = build_local_task(
-            task_id, str(source_topic.name),
+            task_id,
+            str(source_topic.name),
             description="Fast-track task",
             source_docs=["bos://memory/fast-track/virtual-doc"],
             context_uri=f"bos://memory/fast-track/{task_id}",
@@ -266,6 +252,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     """[C2G v4] 将 Pitch (提案) 转换为 Bet 并在 OMO 中生成 Planned Task."""
     from .adapters import get_providers
     from .llm import extract_tasks_from_pitch
+
     gov, store = get_providers(str(base_dir), adapter)
     print(f"🌉 [C2G v4] 正在将 Pitch 转化为 OMO Bet: {source_file.name}")
     content = source_file.read_text(encoding="utf-8")
@@ -275,7 +262,9 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     upstream, appetite = _parse_pitch_frontmatter(content)
 
     if not upstream:
-        print("  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch 缺乏 Upstream 锚点，拒绝转化为 Bet。请在文档头部声明 `> **Upstream**: MS-XXX`。")
+        print(
+            "  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch 缺乏 Upstream 锚点，拒绝转化为 Bet。请在文档头部声明 `> **Upstream**: MS-XXX`。"
+        )
         return
 
     # 创建 Bet (Goal)
@@ -286,7 +275,9 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     if adapter == "ecos":
         goals_file = base_dir / "goals" / "current.yaml"
         if goals_file.exists():
-            goals_data = yaml.safe_load(goals_file.read_text())
+            from .bridge_utils import strip_frontmatter
+
+            goals_data = yaml.safe_load(strip_frontmatter(goals_file.read_text()))
             existing_ids = [g.get("id") for g in goals_data.get("goals", [])]
             if bet_id in existing_ids:
                 print(f"  ⏭  Bet {bet_id} already exists, skip.")
@@ -294,7 +285,16 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
                 return
 
     from .domain import BetSchema
-    store.save_bet(BetSchema(goal_id=bet_id, title=source_file.stem, description=desc, appetite=appetite, created_at=_utc_now()))
+
+    store.save_bet(
+        BetSchema(
+            goal_id=bet_id,
+            title=source_file.stem,
+            description=desc,
+            appetite=appetite,
+            created_at=_utc_now(),
+        )
+    )
 
     # 派生 Planned Task
     planned_dir = base_dir / "tasks" / "planned"
@@ -304,24 +304,29 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     llm_tasks = extract_tasks_from_pitch(content)
 
     if not llm_tasks:
-        llm_tasks = [{
-            "title": f"执行 {bet_id}: {source_file.stem}",
-            "description": f"从 Pitch转化而来的任务: {source_file.stem}",
-            "task_type": "feature",
-            "risk_level": "L0",
-            "cognitive_cartridge": "",
-            "deliverables": [f"达成 {bet_id}"],
-            "evidence_required": ["回写 Pitch 并通过 Bet 验收"],
-            "test_plan": ["依据 Pitch 验收"]
-        }]
+        llm_tasks = [
+            {
+                "title": f"执行 {bet_id}: {source_file.stem}",
+                "description": f"从 Pitch转化而来的任务: {source_file.stem}",
+                "task_type": "feature",
+                "risk_level": "L0",
+                "cognitive_cartridge": "",
+                "deliverables": [f"达成 {bet_id}"],
+                "evidence_required": ["回写 Pitch 并通过 Bet 验收"],
+                "test_plan": ["依据 Pitch 验收"],
+            }
+        ]
 
     tasks_created = 0
     for idx, extracted in enumerate(llm_tasks):
-        task_id = f"IMPORTED-{hashlib.md5((bet_id + str(idx)).encode()).hexdigest()[:6]}"
+        task_id = (
+            f"IMPORTED-{hashlib.md5((bet_id + str(idx)).encode()).hexdigest()[:6]}"
+        )
 
         if adapter == "ecos":
             task_data = build_ecos_task(
-                task_id, extracted.get("title", f"Task {idx}"),
+                task_id,
+                extracted.get("title", f"Task {idx}"),
                 task_type=extracted.get("task_type", "feature"),
                 risk_level=extracted.get("risk_level", "L0"),
                 source_docs=[str(source_file.absolute())],
@@ -341,12 +346,15 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
                 },
             )
             if not _validate_ecos_task(task_data):
-                print(f"  ❌ M2 防腐层拦截 (Schema Validation Failed for task {task_id})")
+                print(
+                    f"  ❌ M2 防腐层拦截 (Schema Validation Failed for task {task_id})"
+                )
                 continue
             _write_ecos_task(base_dir, task_id, task_data)
         else:
             task_data = build_local_task(
-                task_id, extracted.get("title", f"Task {idx}"),
+                task_id,
+                extracted.get("title", f"Task {idx}"),
                 description=extracted.get("description", "No description"),
                 source_docs=[str(source_file.absolute())],
                 context_uri=f"bos://memory/sandbox/pitches/{source_file.name}",

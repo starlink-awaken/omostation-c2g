@@ -1,46 +1,38 @@
 from typing import List
-import importlib
-import importlib.util
 from pathlib import Path
 
 import yaml
 
 from .ports import IGovernanceProvider, IStorageProvider
 from .domain import PitchSchema, BetSchema, TaskSchema
+from .omo_client import (
+    _import_omo_module,
+    create_goal_via_broker,
+    create_planned_task_via_broker,
+    validate_planned_task_data,
+)
 
-
-def _import_omo_module(module_name: str):
-    try:
-        return importlib.import_module(module_name)
-    except ImportError:
-        workspace_projects = Path(__file__).resolve().parents[3]
-        leaf = module_name.rsplit(".", 1)[-1]
-        module_path = workspace_projects / "omo" / "src" / "omo" / f"{leaf}.py"
-        if not module_path.exists():
-            raise
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        if spec is None or spec.loader is None:
-            raise
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
 
 class EcosGovernanceProvider(IGovernanceProvider):
     def __init__(self, omo_dir_path: str | None = None):
         self.omo_dir = Path(omo_dir_path) if omo_dir_path else None
         try:
-            self.omo_task_schema = _import_omo_module("omo.omo_task_schema")
+            _import_omo_module("omo.omo_task_schema")
         except ImportError:
-            raise ImportError("The 'omo' package is required to use EcosGovernanceProvider. Install c2g[ecos].")
+            raise ImportError(
+                "The 'omo' package is required to use EcosGovernanceProvider. Install c2g[ecos]."
+            )
 
     def validate_pitch(self, pitch: PitchSchema) -> bool:
         if not pitch.upstream_ref:
-            print("  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch缺乏Upstream锚点，拒绝转化为Bet。")
+            print(
+                "  ❌ [CR-STRATEGY-01 孤儿拦截] Pitch缺乏Upstream锚点，拒绝转化为Bet。"
+            )
             return False
         return True
 
     def validate_task(self, task: TaskSchema) -> bool:
-        errors = self.omo_task_schema.validate_task_data(task.model_dump(), group="planned")
+        errors = validate_planned_task_data(task.model_dump())
         if errors:
             print("  ❌ M2 防腐层拦截 (Schema Validation Failed)")
             for err in errors:
@@ -58,24 +50,25 @@ class EcosGovernanceProvider(IGovernanceProvider):
         phase = data.get("current_phase") or data.get("phase") or data.get("phase_id")
         return str(phase) if phase is not None else "unknown"
 
+
 class EcosStorageProvider(IStorageProvider):
     def __init__(self, omo_dir_path):
         from pathlib import Path
+
         self.omo_dir = Path(omo_dir_path)
         try:
-            self.omo_goal = _import_omo_module("omo.omo_goal")
-            self.omo_io = _import_omo_module("omo.omo_io")
-            self.omo_ingress = _import_omo_module("omo.omo_ingress")
+            _import_omo_module("omo.omo_ingress")
         except ImportError:
-            raise ImportError("The 'omo' package is required to use EcosStorageProvider. Install c2g[ecos].")
+            raise ImportError(
+                "The 'omo' package is required to use EcosStorageProvider. Install c2g[ecos]."
+            )
 
     def save_bet(self, bet: BetSchema) -> str:
-        self.omo_ingress.create_goal(
+        create_goal_via_broker(
             self.omo_dir,
             goal_id=bet.goal_id,
             title=bet.title,
             description=f"Bet: {bet.title} (Appetite: {bet.appetite})",
-            ingress_plane="projects/c2g",
             source_ref=f"c2g:bet:{bet.goal_id}",
             extra_fields={
                 "appetite": bet.appetite,
@@ -98,7 +91,9 @@ class EcosStorageProvider(IStorageProvider):
             "source_docs": metadata.get("source_docs", ["c2g:task-without-source-doc"]),
             "deliverables": metadata.get("deliverables", ["执行记录与源码修改"]),
             "imported_via": metadata.get("imported_via", "projects/c2g"),
-            "context_uri": metadata.get("context_uri", f"bos://memory/tasks/{task.task_id}"),
+            "context_uri": metadata.get(
+                "context_uri", f"bos://memory/tasks/{task.task_id}"
+            ),
             "assigned_to": None,
             "dispatch_id": None,
             "run_ref": None,
@@ -114,10 +109,9 @@ class EcosStorageProvider(IStorageProvider):
             "human_approval_required": metadata.get("human_approval_required", False),
             "metadata": metadata,
         }
-        self.omo_ingress.create_planned_task(
+        create_planned_task_via_broker(
             self.omo_dir,
             task_data=task_data,
-            ingress_plane="projects/c2g",
             source_ref=f"c2g:task:{task.task_id}",
         )
         return task.task_id
@@ -126,7 +120,7 @@ class EcosStorageProvider(IStorageProvider):
         sandbox_dir = self.omo_dir.parent / "runtime" / "sandbox" / "pitches"
         if not sandbox_dir.exists():
             return []
-        
+
         pitches = []
         for pf in sandbox_dir.glob("*.md"):
             content = pf.read_text(encoding="utf-8")
@@ -134,17 +128,19 @@ class EcosStorageProvider(IStorageProvider):
             appetite = "Unknown"
             for line in content.split("\n"):
                 if "> **Upstream**" in line:
-                    upstream = line.split(":", 1)[1].strip() if ":" in line else line.strip()
+                    upstream = (
+                        line.split(":", 1)[1].strip() if ":" in line else line.strip()
+                    )
                 if "**Appetite:**" in line:
                     appetite = line.replace("**Appetite:**", "").strip()
-            
+
             p = PitchSchema(
                 pitch_id=pf.name,
                 title=pf.stem,
                 content=content,
                 upstream_ref=upstream,
                 appetite=appetite,
-                created_at="Unknown"
+                created_at="Unknown",
             )
             pitches.append(p)
         return pitches
@@ -166,15 +162,18 @@ class EcosStorageProvider(IStorageProvider):
             gid = g.get("id", "")
             if not gid.startswith("BET-"):
                 continue
-            bets.append(BetSchema(
-                goal_id=gid,
-                title=g.get("title") or g.get("desc", gid),
-                description=g.get("desc", ""),
-                vector=g.get("vector", "V1"),
-                created_at=g.get("created_at", ""),
-                appetite=g.get("appetite", ""),
-            ))
+            bets.append(
+                BetSchema(
+                    goal_id=gid,
+                    title=g.get("title") or g.get("desc", gid),
+                    description=g.get("desc", ""),
+                    vector=g.get("vector", "V1"),
+                    created_at=g.get("created_at", ""),
+                    appetite=g.get("appetite", ""),
+                )
+            )
         return bets
+
 
 def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):
     """
@@ -183,13 +182,20 @@ def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):
     """
     if adapter_type == "ecos":
         try:
-            return EcosGovernanceProvider(base_dir_path), EcosStorageProvider(base_dir_path)
+            return EcosGovernanceProvider(base_dir_path), EcosStorageProvider(
+                base_dir_path
+            )
         except ImportError as e:
-            print(f"⚠️ eCOS Adapter not available ({e}). Falling back to 'local' adapter.")
+            print(
+                f"⚠️ eCOS Adapter not available ({e}). Falling back to 'local' adapter."
+            )
             adapter_type = "local"
-    
+
     if adapter_type == "local":
         from .adapters_local import LocalGovernanceProvider, LocalStorageProvider
-        return LocalGovernanceProvider(), LocalStorageProvider(base_dir_path or ".c2g_data")
-    
+
+        return LocalGovernanceProvider(), LocalStorageProvider(
+            base_dir_path or ".c2g_data"
+        )
+
     raise ValueError(f"Unknown adapter type: {adapter_type}")

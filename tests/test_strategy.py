@@ -141,3 +141,23 @@ class TestCheckAnomalies:
         m = self._metrics(owners={"a": 3, "b": 3, "c": 4}, total=10)
         warnings = _check_anomalies(m, 10, omo_dir=tmp_path)
         assert not any("7 天无 done task" in w for w in warnings)
+
+    def test_done_l3_not_warned_when_planned_empty(self, tmp_path: Path):
+        """P52 fix regression: planned 空 + done L3 → 不该告警 L3.
+
+        根因: planned 空时 pending_metrics=None, _check_anomalies L97
+        `pm = pending_metrics or metrics` fallback 全量 (含 done), 导致
+        done L3 误报 "高风险需 review", health 虚低 (85/100 实测).
+        修复: 调用方传 _collect_metrics([]) (空 metrics, non-empty dict),
+        pm 不 fallback, pending L3=0 → 不告警.
+        """
+        (tmp_path / "tasks" / "done").mkdir(parents=True)
+        recent = tmp_path / "tasks" / "done" / "R.yaml"
+        recent.write_text("id: R\nstatus: done", encoding="utf-8")
+        recent.touch()  # 避 7d 停滞告警干扰
+        full = self._metrics(l3=5, total=10)  # 全量含 5 个 done L3
+        pending = _collect_metrics([])  # planned 空 → 空 metrics
+        warnings = _check_anomalies(full, 10, omo_dir=tmp_path, pending_metrics=pending)
+        assert not any("L3 高风险" in w for w in warnings), (
+            f"done L3 误报 (pending 空 fallback 全量): {warnings}"
+        )
