@@ -11,12 +11,16 @@ from .omo_client import create_planned_task_via_broker, validate_planned_task_da
 from .task_builder import build_ecos_task, build_local_task
 
 
-def _parse_pitch_frontmatter(content: str) -> tuple[str | None, str]:
-    """Parse leading blockquote frontmatter for Upstream and Appetite.
+def _parse_pitch_frontmatter(content: str) -> tuple[str | None, str, str | None]:
+    """Parse leading blockquote frontmatter for Upstream, Appetite, Scenario.
 
     Only the first contiguous blockquote block at the top of the document is
     inspected, so body sections like `## Boundaries & Appetites` cannot shadow
     the real frontmatter values.
+
+    Scenario (BET-7, 2026-06-27): optional field from c2g ``brainstorm --scenario``,
+    format ``> **Scenario**: <key> (<label>)``; only the key (e.g. "finance") is
+    extracted and passed through to task metadata for routing/audit/filtering.
     """
     lines = content.splitlines()
     frontmatter_lines: list[str] = []
@@ -37,9 +41,11 @@ def _parse_pitch_frontmatter(content: str) -> tuple[str | None, str]:
     text = "\n".join(frontmatter_lines)
     upstream_match = re.search(r"^>\s*\*\*Upstream\*\*:\s*(.+)$", text, re.MULTILINE)
     appetite_match = re.search(r"^>\s*\*\*Appetite:\*\*\s*(.+)$", text, re.MULTILINE)
+    scenario_match = re.search(r"^>\s*\*\*Scenario\*\*:\s*(\S+)", text, re.MULTILINE)
     upstream = upstream_match.group(1).strip() if upstream_match else None
     appetite = appetite_match.group(1).strip() if appetite_match else "Unknown"
-    return upstream, appetite
+    scenario = scenario_match.group(1).strip() if scenario_match else None
+    return upstream, appetite, scenario
 
 
 def _utc_now() -> str:
@@ -259,7 +265,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
 
     # [C2G v4] CR-STRATEGY-01 孤儿拦截约束
     # 用正则解析文档头部连续 blockquote frontmatter，避免被正文同名列表项覆盖。
-    upstream, appetite = _parse_pitch_frontmatter(content)
+    upstream, appetite, scenario = _parse_pitch_frontmatter(content)
 
     if not upstream:
         print(
@@ -342,6 +348,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
                     "metadata": {
                         "bet_id": bet_id,
                         "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                        **({"scenario": scenario} if scenario else {}),
                     },
                 },
             )
@@ -369,6 +376,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
                         "wait_for_gate": ["BET_APPROVED"],
                         "bet_id": bet_id,
                         "cognitive_cartridge": extracted.get("cognitive_cartridge", ""),
+                        **({"scenario": scenario} if scenario else {}),
                     },
                 },
             )

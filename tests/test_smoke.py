@@ -221,3 +221,33 @@ def test_cli_brainstorm_scenario():
     finally:
         if pitch_file.exists():
             os.remove(pitch_file)
+
+
+def test_parse_pitch_frontmatter_scenario():
+    """BET-7: _parse_pitch_frontmatter 解析 Scenario 字段 (三元组, 向后兼容)."""
+    from c2g.bridge_import import _parse_pitch_frontmatter
+
+    # 有 Scenario 的场景化 Pitch (c2g brainstorm --scenario finance 生成)
+    content_with_scenario = (
+        "# 月度预算\n\n"
+        "> **Scenario**: finance (财务)\n"
+        "> **Upstream**: MS-FINANCE-001\n"
+        "> **Appetite:** 1 week\n\n"
+        "## 背景\n...\n"
+    )
+    upstream, appetite, scenario = _parse_pitch_frontmatter(content_with_scenario)
+    assert upstream == "MS-FINANCE-001"
+    assert appetite == "1 week"
+    assert scenario == "finance"
+
+    # 无 Scenario 的通用 Pitch (向后兼容, scenario=None)
+    content_generic = (
+        "# 通用点子\n\n"
+        "> **Upstream**: MS-001\n"
+        "> **Appetite:** 2 hours\n\n"
+        "## 背景\n...\n"
+    )
+    upstream2, appetite2, scenario2 = _parse_pitch_frontmatter(content_generic)
+    assert upstream2 == "MS-001"
+    assert appetite2 == "2 hours"
+    assert scenario2 is None
