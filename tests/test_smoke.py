@@ -164,3 +164,60 @@ def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
     assert (
         omo_dir / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml"
     ).exists()
+
+
+def test_scenarios_registry():
+    """BET-6: 6 场景注册表完整 (gongwen/vault/research/family/health/finance)."""
+    from c2g.scenarios import SCENARIOS, get_scenario
+
+    assert set(SCENARIOS) == {
+        "gongwen",
+        "vault",
+        "research",
+        "family",
+        "health",
+        "finance",
+    }
+    for key, sc in SCENARIOS.items():
+        assert sc.key == key
+        assert sc.label  # 非空中文标签
+        assert sc.upstream_hint
+        assert len(sc.nogos) >= 2  # YAGNI 禁区
+        assert len(sc.sections) >= 2  # 场景专属小节
+    assert get_scenario("finance").label == "财务"
+    assert get_scenario(None) is None
+    assert get_scenario("nonexistent") is None
+
+
+def test_cli_brainstorm_scenario():
+    """BET-6: brainstorm --scenario finance 生成场景化 Pitch (Scenario 行 + 场景专属小节)."""
+    import os
+
+    pitch_file = PROJECT_ROOT / ".c2g_data" / "pitches" / "Idea-test-bet6-scenario.md"
+    try:
+        result = subprocess.run(
+            [
+                "uv",
+                "run",
+                "--project",
+                ".",
+                "c2g",
+                "brainstorm",
+                "test-bet6-scenario",
+                "--scenario",
+                "finance",
+            ],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert "[场景: 财务]" in result.stdout
+        assert pitch_file.exists()
+        content = pitch_file.read_text(encoding="utf-8")
+        assert "> **Scenario**: finance (财务)" in content
+        assert "## 财务场景" in content  # 场景专属小节
+        assert "## NoGos (YAGNI)" in content
+    finally:
+        if pitch_file.exists():
+            os.remove(pitch_file)

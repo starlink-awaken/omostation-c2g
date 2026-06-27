@@ -26,7 +26,7 @@ graph LR
 
 | Type | Entry | Port / Notes |
 |:--|:--|:--|
-| CLI | `c2g` | brainstorm/draft/bet/radar/gc |
+| CLI | `c2g` | brainstorm/draft (`--scenario` 场景化, BET-6)/bet/radar/gc |
 | MCP stdio | `c2g-mcp` | c2g_bet, c2g_radar, c2g_gc |
 
 ## 3. 核心模块
@@ -38,6 +38,7 @@ graph LR
 | `src/c2g/bridge.py` | Legacy Pitch → Bet/Task import |
 | `src/c2g/bridge_import.py` | [C2G v4] Pitch frontmatter parsing + Bet/Task materialization |
 | `src/c2g/strategy.py` | radar audit + gc |
+| `src/c2g/scenarios.py` | [BET-6] 场景注册表 (6 场景 Pitch 模板: gongwen/vault/research/family/health/finance) |
 | `src/c2g/ports.py + adapters.py` | IOC + ecos/omo adapter |
 
 ## 4. 测试
