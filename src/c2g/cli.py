@@ -26,7 +26,6 @@ def _pitches_dir(workspace_root: Path, adapter: str) -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    print("⚠️ C2G 独立 CLI 已弃用，请使用 cockpit 替代", file=sys.stderr)
     if argv is None:
         argv = sys.argv[1:]
     parser = argparse.ArgumentParser(
