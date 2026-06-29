@@ -34,7 +34,7 @@ def _load_cognitive_cartridges() -> str:
                     data = yaml.safe_load(file)
                     if data and data.get("type") == "CognitiveFramework":
                         frameworks.append(f"- {data.get('id')}: {data.get('name')} ({data.get('description')})")
-            except Exception:
+            except Exception:  # noqa: BLE001  # defensive fallback
                 pass
     if not frameworks:
         return "无可用卡带"
@@ -141,7 +141,7 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
 
         print("  ✅ 成功通过 LLM-Gateway 完成智能拆解！")
         return tasks
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # defensive fallback
         import traceback
         print(f"  ⚠️ LLM-Gateway 请求失败或返回非预期格式: {e}，回退到 Mock 逻辑。")
         traceback.print_exc()

@@ -34,5 +34,23 @@
     "vector": "V2",
     "appetite": "2周 (roadmap BET-6, 跨项目: cockpit + family-hub + 域)",
     "created_at": "2026-06-23T02:33:11Z"
+  },
+  {
+    "goal_id": "BET-9f21",
+    "title": "Idea-test-draft-bet-path",
+    "description": "Bet: Idea-test-draft-bet-path (Appetite: MS-TEST)",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "MS-TEST",
+    "created_at": "2026-06-27T05:54:44Z"
+  },
+  {
+    "goal_id": "BET-9f21",
+    "title": "Idea-test-draft-bet-path",
+    "description": "Bet: Idea-test-draft-bet-path (Appetite: MS-TEST)",
+    "status": "active",
+    "vector": "V2",
+    "appetite": "MS-TEST",
+    "created_at": "2026-06-27T05:55:50Z"
   }
 ]
