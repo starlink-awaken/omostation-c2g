@@ -6,7 +6,7 @@
 > **Health**: See local CI and smoke verification
 > **SSOT**: 运行时健康、入口成熟度以本项目 CI、smoke 验证和 workspace governance SSOT 为准
 >
-> 系统全景参见：[`docs/ARCHITECTURE-DIAGRAM.md`](../docs/ARCHITECTURE-DIAGRAM.md)
+> 系统全景参见：[`../../docs/PANORAMA.md`](../../docs/PANORAMA.md)
 
 ---
 
