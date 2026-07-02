@@ -32,3 +32,7 @@
 - 项目源码：`projects/c2g/`
 - 入口定义：`projects/c2g/pyproject.toml` 或 `package.json`
 - 测试：`cd projects/c2g && uv run pytest tests/ -q`
+
+## 架构演进与项目边界索引
+
+参见工作区架构演进与项目边界：[`../../docs/ARCHITECTURE-EVOLUTION.md`](../../docs/ARCHITECTURE-EVOLUTION.md)
