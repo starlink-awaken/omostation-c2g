@@ -193,9 +193,13 @@ def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):
 
     if adapter_type == "local":
         from .adapters_local import LocalGovernanceProvider, LocalStorageProvider
+        from .bridge_utils import get_c2g_data_dir
 
-        return LocalGovernanceProvider(), LocalStorageProvider(
-            base_dir_path or ".c2g_data"
-        )
+        # 锚定修复 (2026-07-02): base_dir 缺省 / 或来自 ecos 回退时的 .omo 路径,
+        # 一律落到 <repo_root>/.c2g_data — 曾把 bets.json 写进 .omo/ 造成三处分叉
+        local_dir = base_dir_path
+        if not local_dir or Path(local_dir).name == ".omo":
+            local_dir = str(get_c2g_data_dir())
+        return LocalGovernanceProvider(), LocalStorageProvider(local_dir)
 
     raise ValueError(f"Unknown adapter type: {adapter_type}")

@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 from c2g.bridge import _import_pitch, get_omo_dir
+from c2g.bridge_utils import get_c2g_data_dir
 from c2g.scenarios import SCENARIOS, get_scenario
 from c2g.strategy import strategy_audit, strategy_gc
 
@@ -15,11 +16,11 @@ def _slugify(text: str, max_len: int = 30) -> str:
 
 
 def _pitches_dir(workspace_root: Path, adapter: str) -> Path:
-    """pitches 目录 (ecos: workspace/runtime/sandbox/pitches; local: ./.c2g_data/pitches), 自动创建."""
+    """pitches 目录 (ecos: workspace/runtime/sandbox/pitches; local: <repo_root>/.c2g_data/pitches), 自动创建."""
     d = (
         workspace_root / "runtime" / "sandbox" / "pitches"
         if adapter == "ecos"
-        else Path.cwd() / ".c2g_data" / "pitches"
+        else get_c2g_data_dir() / "pitches"
     )
     d.mkdir(parents=True, exist_ok=True)
     return d
@@ -84,9 +85,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    omo_dir = get_omo_dir(Path.cwd()) if args.adapter == "ecos" else Path.cwd()
+    # local: 存储锚定 <repo_root>/.c2g_data (不随 cwd 漂移, 见 bridge_utils.get_c2g_data_dir)
+    omo_dir = get_omo_dir(Path.cwd()) if args.adapter == "ecos" else get_c2g_data_dir()
     if args.adapter == "local":
-        workspace_root = Path.cwd()
+        workspace_root = get_c2g_data_dir().parent
     else:
         workspace_root = omo_dir.parent
         if omo_dir.name == ".omo" and workspace_root.name == "omo":

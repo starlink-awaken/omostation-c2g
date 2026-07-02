@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .bridge_utils import get_omo_dir
+from .bridge_utils import get_c2g_data_dir, get_omo_dir
 from .bridge_import import _import_bmad, _import_fast_track, _import_pitch
 
 def main(argv: list[str]) -> int:
@@ -35,7 +35,8 @@ def main(argv: list[str]) -> int:
         print(f"Error: {source} not found.")
         return 1
 
-    omo_dir = get_omo_dir(Path.cwd()) if args.adapter == "ecos" else Path.cwd()
+    # local: 存储锚定 <repo_root>/.c2g_data (不随 cwd 漂移)
+    omo_dir = get_omo_dir(Path.cwd()) if args.adapter == "ecos" else get_c2g_data_dir()
     if not omo_dir.exists():
         print(f"Error: {omo_dir} not found.")
         return 1

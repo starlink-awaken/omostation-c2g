@@ -1,4 +1,40 @@
+import os
 from pathlib import Path
+
+
+def get_c2g_data_dir(start: Path | None = None) -> Path:
+    """local adapter 数据目录 (bets.json/tasks.json/pitches/) 的稳定锚点.
+
+    修复 P16 漂移 (2026-07-02 审计): 原先锚定 Path.cwd(), c2g 在不同 cwd 运行会把
+    bets.json 散落到 workspace 根 / .omo/ / .c2g_data/ 三处并各自分叉.
+
+    解析顺序:
+      1. 环境变量 C2G_DATA_DIR (显式覆盖)
+      2. 从 start (默认 cwd) 向上找最近的仓库根 (.git 或 .omo 所在目录, 跳过 ~)
+         → <repo_root>/.c2g_data  (在 c2g 子仓库内运行 → c2g/.c2g_data, 保持测试语义;
+            在 workspace 任意子目录运行 → workspace/.c2g_data)
+      3. 兜底: <start>/.c2g_data
+    """
+    env = os.environ.get("C2G_DATA_DIR")
+    if env:
+        d = Path(env).expanduser()
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+    origin = (start or Path.cwd()).resolve()
+    home = Path.home()
+    cur = origin
+    while cur != cur.parent:
+        if cur == home:
+            break
+        if (cur / ".git").exists() or (cur / ".omo").is_dir():
+            d = cur / ".c2g_data"
+            d.mkdir(parents=True, exist_ok=True)
+            return d
+        cur = cur.parent
+    d = origin / ".c2g_data"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
 
 def get_omo_dir(base_dir: Path) -> Path:
     """向上查找 .omo/, 返回最外层 (workspace 边界内) 的.
