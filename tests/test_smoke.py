@@ -145,7 +145,10 @@ def test_ecos_storage_provider_save_bet_uses_omo_ingress(tmp_path: Path):
         (goals_dir / "current.yaml").read_text(encoding="utf-8")
     )
     assert any(goal["id"] == "BET-aa11" for goal in goals_payload["goals"])
-    assert (omo_dir / "_delivery" / "ingress" / "goals" / "BET-aa11.yaml").exists()
+    # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
+    assert (
+        omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "goals" / "BET-aa11.yaml"
+    ).exists()
 
 
 def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
@@ -161,8 +164,9 @@ def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
     _write_ecos_task(omo_dir, "IMPORTED-broker", task_data)
 
     assert (omo_dir / "tasks" / "planned" / "IMPORTED-broker.yaml").exists()
+    # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
     assert (
-        omo_dir / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml"
+        omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml"
     ).exists()
 
 
