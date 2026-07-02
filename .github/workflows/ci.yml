@@ -1,0 +1,43 @@
+name: CI
+
+# 2026-07-02 新增 (审计路线 §四.12): c2g 此前无 CI。
+# 注: test_smoke/test_bet_id_reuse 中的 subprocess 用例依赖 `uv run --project`
+# 与外层 workspace 布局, 在裸 checkout 中以 in-process 测试为准。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync
+      - name: Ruff check
+        run: uv run ruff check src/ || true  # 首次接入先观察, 不阻断
+
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync
+      - name: Run in-process tests
+        run: uv run pytest tests/ -q --tb=short --deselect tests/test_smoke.py --deselect tests/test_bet_id_reuse.py
