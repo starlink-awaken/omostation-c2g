@@ -1,14 +1,15 @@
 # C2G Documentation
 
-> 战略需求引擎：Concept/Pitch/Bet 到治理任务
-> Strategy ingress engine: Concept/Pitch/Bet to governed tasks.
+> X · 战略需求引擎
+> Stack: Python
 
-This directory is the documentation home for **C2G**. Detailed design documents live in the project root; use the index below to navigate.
+This directory collects project-level documentation for **C2G**.
 
 ## Document Map
 
 - [`../README.md`](../README.md) — Project overview and quick start
-- [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — Architecture and design
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — Architecture overview
+- [`API.md`](API.md) — API / command-line / usage reference
 - [`../BOUNDARY.md`](../BOUNDARY.md) — Boundaries and interfaces
 - [`../CALLCHAIN.md`](../CALLCHAIN.md) — Call chains and interaction flows
 - [`../CAPABILITY-MAP.md`](../CAPABILITY-MAP.md) — Capability map
@@ -17,6 +18,7 @@ This directory is the documentation home for **C2G**. Detailed design documents 
 - [`../CHANGELOG.md`](../CHANGELOG.md) — Change log
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — Contribution guide
 - [`../SECURITY.md`](../SECURITY.md) — Security policy
+- [`../LICENSE`](../LICENSE) — MIT License
 
 ## Workspace Context
 
