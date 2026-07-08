@@ -14,7 +14,7 @@ Import `c2g.strategy` and `c2g.bridge` for pitch-to-task workflows.
 ## Configuration
 
 - Stack: python
-- Dependencies: see [`../pyproject.toml`](../pyproject.toml) (Python) or [`../package.json`](../package.json) (TypeScript).
+- Dependencies: see [`../pyproject.toml`](../pyproject.toml) (Python).
 - Environment variables and ports: see workspace `protocols/port-registry.yaml` and root `.env.example`.
 
 ## Tests
