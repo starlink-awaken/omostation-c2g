@@ -13,9 +13,9 @@ def test_success_prediction():
         tracker = OutcomeTracker(Path(tmpdir))
         analyzer = PitchIntelligenceAnalyzer(tracker)
         
-        good_pitch = "# Test Pitch\n&gt; **Upstream**: Improve efficiency\n&gt; **Appetite**: 1 day"
+        good_pitch = "# Test Pitch\n> **Upstream**: Improve efficiency\n> **Appetite**: 1 day"
         score = analyzer.predict_pitch_success_probability(good_pitch)
-        assert 0.0 &lt;= score &lt;= 1.0
+        assert 0.0 <= score <= 1.0
 
 
 def test_extract_intent():
@@ -35,4 +35,4 @@ def test_suggestions():
         
         bad_pitch = "# Pitch only title"
         suggestions = analyzer.suggest_pitch_improvements(bad_pitch)
-        assert len(suggestions) &gt; 0
+        assert len(suggestions) > 0

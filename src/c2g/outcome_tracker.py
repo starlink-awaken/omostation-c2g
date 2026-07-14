@@ -89,7 +89,7 @@ class OutcomeTracker:
             total = len(outcome["generated_tasks"])
             completed = len(outcome["completed_tasks"])
             failed = len(outcome["failed_tasks"])
-            if total &gt; 0:
+            if total > 0:
                 outcome["success_score"] = max(0.0, min(1.0, (completed - failed) / total))
 
     def add_lessons_learned(self, pitch_id, lesson):
