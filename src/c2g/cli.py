@@ -6,6 +6,8 @@ from c2g.bridge import _import_pitch, get_omo_dir
 from c2g.bridge_utils import get_c2g_data_dir
 from c2g.scenarios import SCENARIOS, get_scenario
 from c2g.strategy import strategy_audit, strategy_gc
+from c2g.outcome_tracker import OutcomeTracker
+from c2g.pitch_analyzer import PitchIntelligenceAnalyzer
 
 
 def _slugify(text: str, max_len: int = 30) -> str:
@@ -82,6 +84,28 @@ def main(argv: list[str] | None = None) -> int:
     parser_gc.add_argument(
         "--dry-run", action="store_true", help="Preview GC without moving files"
     )
+    
+    # 5. Outcome tracking (NEW) - Pitch 效果追踪
+    parser_outcome = subparsers.add_parser(
+        "outcome", help="[NEW] Track Pitch outcome tracking"
+    )
+    outcome_subparsers = parser_outcome.add_subparsers(dest="outcome_command", required=True)
+    outcome_subparsers.add_parser(
+        "list", help="List all tracked Pitch outcomes"
+    )
+    outcome_track = outcome_subparsers.add_parser(
+        "track", help="Track a specific Pitch"
+    )
+    outcome_track.add_argument("pitch_id", type=str, help="Pitch ID to track")
+    outcome_subparsers.add_parser(
+        "analyze", help="Analyze Pitch success factors"
+    )
+    
+    # 6. Pitch suggest (NEW) - Pitch 改进建议
+    parser_suggest = subparsers.add_parser(
+        "suggest", help="[NEW] Get Pitch improvement suggestions"
+    )
+    parser_suggest.add_argument("pitch_file", type=str, help="Path to Pitch file")
 
     args = parser.parse_args(argv)
 
@@ -194,6 +218,67 @@ def main(argv: list[str] | None = None) -> int:
 
     elif args.command == "gc":
         strategy_gc(workspace_root, args.adapter)
+
+    elif args.command == "outcome":
+        # 新功能: Outcome 追踪
+        tracker = OutcomeTracker(get_c2g_data_dir())
+        if args.outcome_command == "list":
+            print("📊 [Outcome] Pitch 效果排行榜:")
+            leaderboard = tracker.get_leaderboard()
+            if not leaderboard:
+                print("  (暂无数据)")
+            else:
+                for i, item in enumerate(leaderboard, 1):
+                    score = item.get("success_score", 0)
+                    path = item.get("pitch_path", "")
+                    print(f"  {i}. {path} - 成功率: {score:.0%}")
+        elif args.outcome_command == "track":
+            lifecycle = tracker.track_pitch_lifecycle(args.pitch_id)
+            if lifecycle:
+                print(f"📊 [Outcome] Pitch 完整生命周期:")
+                print(f"  Pitch ID: {lifecycle.pitch_id}")
+                print(f"  路径: {lifecycle.pitch_path}")
+                print(f"  创建于: {lifecycle.created_at}")
+                print(f"  生成任务: {len(lifecycle.generated_tasks)}")
+                print(f"  完成任务: {len(lifecycle.completed_tasks)}")
+                print(f"  失败任务: {len(lifecycle.failed_tasks)}")
+                print(f"  成功率: {lifecycle.success_score:.0%}")
+            else:
+                print(f"❌ 未找到 Pitch ID: {args.pitch_id}")
+        elif args.outcome_command == "analyze":
+            factors = tracker.analyze_pitch_success_factors()
+            print("📈 [Outcome] Pitch 成功关键因素分析:")
+            if factors.high_success_patterns:
+                print("  高成功率模式:")
+                for p in factors.high_success_patterns:
+                    print(f"    ✓ {p}")
+            if factors.recommended_appetite:
+                print("  推荐时间预算:")
+                for k, v in factors.recommended_appetite.items():
+                    print(f"    {k}: {v}")
+
+    elif args.command == "suggest":
+        # 新功能: Pitch 改进建议
+        pitch_path = Path(args.pitch_file)
+        if not pitch_path.exists():
+            print(f"❌ Error: Pitch file {pitch_path} not found.")
+            return 1
+        content = pitch_path.read_text(encoding="utf-8")
+        
+        tracker = OutcomeTracker(get_c2g_data_dir())
+        analyzer = PitchIntelligenceAnalyzer(tracker)
+        
+        # 预测成功率
+        prob = analyzer.predict_pitch_success_probability(content)
+        print(f"📈 [Pitch Intelligence] 预测成功率: {prob:.0%}")
+        
+        # 生成改进建议
+        suggestions = analyzer.suggest_pitch_improvements(content)
+        print("💡 [Pitch Intelligence] 改进建议:")
+        for s in suggestions:
+            status = s.get("status", "")
+            mark = "✓" if status == "ok" else "•"
+            print(f"  {mark} [{s.get('category')}] {s.get('message')}")
 
     return 0
 
