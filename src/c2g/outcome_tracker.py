@@ -125,3 +125,39 @@ class OutcomeTracker:
 
     def get_leaderboard(self, top_n=10):
         return sorted(self._outcomes.values(), key=lambda o: o.get("success_score", 0), reverse=True)[:top_n]
+
+    def backtest_report(self) -> dict[str, Any]:
+        """Wave 2 Phase A (ADR-0183): read-only closed-loop report over stored outcomes.
+
+        Pure analysis — no strategy mutation. Empty store is a valid zero baseline.
+        """
+        rows = list(self._outcomes.values())
+        n = len(rows)
+        if n == 0:
+            return {
+                "pitch_count": 0,
+                "mean_success_score": 0.0,
+                "completed_tasks": 0,
+                "failed_tasks": 0,
+                "top": [],
+                "status": "empty",
+            }
+        scores = [float(r.get("success_score") or 0.0) for r in rows]
+        completed = sum(len(r.get("completed_tasks") or []) for r in rows)
+        failed = sum(len(r.get("failed_tasks") or []) for r in rows)
+        top = self.get_leaderboard(5)
+        return {
+            "pitch_count": n,
+            "mean_success_score": round(sum(scores) / n, 4),
+            "completed_tasks": completed,
+            "failed_tasks": failed,
+            "top": [
+                {
+                    "pitch_id": r.get("pitch_id"),
+                    "success_score": r.get("success_score", 0.0),
+                    "status": r.get("status"),
+                }
+                for r in top
+            ],
+            "status": "ok",
+        }
