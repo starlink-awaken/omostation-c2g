@@ -161,3 +161,24 @@ class OutcomeTracker:
             ],
             "status": "ok",
         }
+
+    def predictive_report(self, horizon: int = 3) -> dict[str, Any]:
+        """Wave 2 Phase B (ADR-0185): forecast + risk heatmap over stored outcomes."""
+        from c2g.predictive import (
+            PredictiveModel,
+            outcomes_time_series,
+            render_heatmap_markdown,
+            risk_heatmap,
+        )
+
+        series = outcomes_time_series(self._outcomes)
+        forecast = PredictiveModel(horizon=horizon).fit_series(series)
+        heat = risk_heatmap(self._outcomes)
+        return {
+            "phase": "wave2-b",
+            "backtest": self.backtest_report(),
+            "forecast": forecast,
+            "heatmap": heat,
+            "heatmap_markdown": render_heatmap_markdown(heat),
+            "status": "ok",
+        }
