@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .omc/
 .c2g_data/
+
+# 运行时账本 (P16 后由 .c2g_data 单点持有, 旧根级副本已收口)
+/bets.json
+/tasks.json
