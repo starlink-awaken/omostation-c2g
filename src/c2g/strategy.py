@@ -106,14 +106,16 @@ def _check_anomalies(
     if l3_count > 0:
         warnings.append(f"⚠️  L3 高风险任务 {l3_count} 个, 需重点 review")
 
-    # 3. Owner 集中度
-    top_owners = metrics["owner"].most_common(1)
-    if top_owners and total > 0:
+    # 3. Owner 集中度 (仅计 pending/active, 避免历史 done 任务误报)
+    owner_metrics = pending_metrics or metrics
+    owner_total = sum(owner_metrics["owner"].values())
+    top_owners = owner_metrics["owner"].most_common(1)
+    if top_owners and owner_total > 0:
         top_owner, top_count = top_owners[0]
-        concentration = top_count / total * 100
+        concentration = top_count / owner_total * 100
         if concentration > 50:
             warnings.append(
-                f"⚠️  Owner 集中度: {top_owner} 持有 {concentration:.0f}% 任务 "
+                f"⚠️  Owner 集中度: {top_owner} 持有 {concentration:.0f}% 待处理任务 "
                 f"(单点故障风险, 知识/能力集中)"
             )
 
