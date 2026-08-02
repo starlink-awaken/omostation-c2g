@@ -292,15 +292,22 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
 
     from .domain import BetSchema
 
-    store.save_bet(
-        BetSchema(
-            goal_id=bet_id,
-            title=source_file.stem,
-            description=desc,
-            appetite=appetite,
-            created_at=_utc_now(),
+    try:
+        store.save_bet(
+            BetSchema(
+                goal_id=bet_id,
+                title=source_file.stem,
+                description=desc,
+                appetite=appetite,
+                created_at=_utc_now(),
+            )
         )
-    )
+    except ValueError as e:
+        if "already exists" in str(e):
+            print(f"  ⏭  Bet {bet_id} already exists (payload changed), skip.")
+            print("✅ Bet 下注成功: 共创建了 0 个执行计划。")
+            return
+        raise
 
     # 派生 Planned Task
     planned_dir = base_dir / "tasks" / "planned"
