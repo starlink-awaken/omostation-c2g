@@ -283,7 +283,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
         if goals_file.exists():
             from .bridge_utils import strip_frontmatter
 
-            goals_data = yaml.safe_load(strip_frontmatter(goals_file.read_text()))
+            goals_data = next(yaml.safe_load_all(strip_frontmatter(goals_file.read_text())), {})
             existing_ids = [g.get("id") for g in goals_data.get("goals", [])]
             if bet_id in existing_ids:
                 print(f"  ⏭  Bet {bet_id} already exists, skip.")
