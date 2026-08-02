@@ -18,6 +18,8 @@ from c2g.predictive import (
     render_heatmap_markdown,
     risk_heatmap,
 )
+from c2g.knowledge_publisher import publish_predictive_card
+
 
 
 def _default_data_dir() -> Path:
@@ -38,14 +40,14 @@ def _default_data_dir() -> Path:
     return Path("runtime/c2g/outcomes")
 
 
-def build_report(data_dir: Path, horizon: int = 3) -> dict:
+def build_report(data_dir: Path, horizon: int = 3, publish_knowledge: bool = False) -> dict:
     tracker = OutcomeTracker(data_dir)
     series = outcomes_time_series(tracker._outcomes)
     model = PredictiveModel(horizon=horizon)
     forecast = model.fit_series(series)
     heat = risk_heatmap(tracker._outcomes)
     backtest = tracker.backtest_report()
-    return {
+    report = {
         "phase": "wave2-b",
         "adr": "0185",
         "data_dir": str(data_dir),
@@ -55,11 +57,15 @@ def build_report(data_dir: Path, horizon: int = 3) -> dict:
         "heatmap_markdown": render_heatmap_markdown(heat),
         "status": "ok" if series or backtest.get("status") == "empty" else "ok",
     }
+    if publish_knowledge:
+        pub_res = publish_predictive_card(report)
+        report["knowledge_publish"] = pub_res
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="C2G predictive governance report (ADR-0185 Phase B)"
+        description="C2G predictive governance report (ADR-0185 Phase B / ADR-0296 Phase C)"
     )
     ap.add_argument(
         "--data-dir",
@@ -73,9 +79,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print heatmap markdown only (for humans)",
     )
+    ap.add_argument(
+        "--publish-knowledge",
+        action="store_true",
+        help="Publish predictive report as a knowledge card to KOS (ADR-0296 Phase C)",
+    )
     args = ap.parse_args(argv)
     data_dir = args.data_dir or _default_data_dir()
-    report = build_report(data_dir, horizon=args.horizon)
+    report = build_report(
+        data_dir,
+        horizon=args.horizon,
+        publish_knowledge=args.publish_knowledge,
+    )
     if args.markdown:
         print(report["heatmap_markdown"])
         return 0

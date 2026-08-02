@@ -182,3 +182,18 @@ class OutcomeTracker:
             "heatmap_markdown": render_heatmap_markdown(heat),
             "status": "ok",
         }
+
+    def publish_outcome_to_knowledge(
+        self, pitch_id: str, agora_endpoint: str | None = None
+    ) -> dict[str, Any] | None:
+        """Wave 2 Phase C (ADR-0296): publish historical outcome card to Knowledge Graph."""
+        if pitch_id not in self._outcomes:
+            return None
+        from c2g.knowledge_publisher import publish_outcome_card
+
+        return publish_outcome_card(
+            pitch_id=pitch_id,
+            outcome_data=self._outcomes[pitch_id],
+            agora_endpoint=agora_endpoint,
+        )
+
