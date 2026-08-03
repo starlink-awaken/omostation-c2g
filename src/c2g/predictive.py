@@ -7,9 +7,10 @@ for this slice so CI stays dep-light.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Sequence
+from typing import Any
 
 
 def _parse_ts(value: str | None) -> datetime | None:
@@ -145,9 +146,7 @@ def risk_heatmap(outcomes: dict[str, Any]) -> dict[str, Any]:
     """
     statuses = ("active", "completed", "failed", "other")
     buckets = ("low", "mid", "high")
-    matrix: dict[str, dict[str, int]] = {
-        st: {b: 0 for b in buckets} for st in statuses
-    }
+    matrix: dict[str, dict[str, int]] = {st: {b: 0 for b in buckets} for st in statuses}
     risk_cells: list[dict[str, Any]] = []
 
     for r in (outcomes or {}).values():
@@ -226,7 +225,9 @@ def render_heatmap_markdown(heatmap: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def blend_prior(heuristic: float, historical_mean: float, n: int, k: float = 5.0) -> float:
+def blend_prior(
+    heuristic: float, historical_mean: float, n: int, k: float = 5.0
+) -> float:
     """Bayesian-ish shrink of content heuristic toward historical base rate.
 
     weight_hist = n / (n + k); more outcomes → more weight on history.

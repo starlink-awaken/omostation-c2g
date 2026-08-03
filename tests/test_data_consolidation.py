@@ -2,16 +2,18 @@
 
 Covers the fix for the 3-way .c2g_data drift + duplicate-goal_id junk accumulation.
 """
+
 import json
 from pathlib import Path
 
+from c2g.adapters_local import LocalStorageProvider, _dedup_by_key, consolidate_data
 from c2g.domain import BetSchema, TaskSchema
-from c2g.adapters_local import LocalStorageProvider, consolidate_data, _dedup_by_key
 
 
 def _bet(goal_id, status="active", title="T"):
-    return BetSchema(goal_id=goal_id, title=title, description="d",
-                     status=status, created_at="now")
+    return BetSchema(
+        goal_id=goal_id, title=title, description="d", status=status, created_at="now"
+    )
 
 
 class TestUpsert:
@@ -31,10 +33,20 @@ class TestUpsert:
 
     def test_save_task_upsert(self, tmp_path: Path):
         store = LocalStorageProvider(base_dir=str(tmp_path / "c2g"))
-        t1 = TaskSchema(task_id="T-1", title="a", description="d",
-                        created_at="now", updated_at="now")
-        t2 = TaskSchema(task_id="T-1", title="b", description="d",
-                        created_at="now", updated_at="now")
+        t1 = TaskSchema(
+            task_id="T-1",
+            title="a",
+            description="d",
+            created_at="now",
+            updated_at="now",
+        )
+        t2 = TaskSchema(
+            task_id="T-1",
+            title="b",
+            description="d",
+            created_at="now",
+            updated_at="now",
+        )
         store.save_task(t1)
         store.save_task(t2)
         data = json.loads((tmp_path / "c2g" / "tasks.json").read_text())
@@ -78,14 +90,41 @@ class TestConsolidation:
         LocalStorageProvider(str(dest)).save_bet(_bet("BET-A"))
         # legacy source has BET-B + a duplicate junk BET-J twice
         (src).mkdir(parents=True)
-        (src / "bets.json").write_text(json.dumps([
-            {"goal_id": "BET-B", "title": "b", "description": "d",
-             "status": "active", "vector": "V2", "appetite": "1 week", "created_at": "now"},
-            {"goal_id": "BET-J", "title": "junk", "description": "d",
-             "status": "active", "vector": "V2", "appetite": "1 week", "created_at": "now"},
-            {"goal_id": "BET-J", "title": "junk", "description": "d",
-             "status": "active", "vector": "V2", "appetite": "1 week", "created_at": "now"},
-        ], ensure_ascii=False), encoding="utf-8")
+        (src / "bets.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "goal_id": "BET-B",
+                        "title": "b",
+                        "description": "d",
+                        "status": "active",
+                        "vector": "V2",
+                        "appetite": "1 week",
+                        "created_at": "now",
+                    },
+                    {
+                        "goal_id": "BET-J",
+                        "title": "junk",
+                        "description": "d",
+                        "status": "active",
+                        "vector": "V2",
+                        "appetite": "1 week",
+                        "created_at": "now",
+                    },
+                    {
+                        "goal_id": "BET-J",
+                        "title": "junk",
+                        "description": "d",
+                        "status": "active",
+                        "vector": "V2",
+                        "appetite": "1 week",
+                        "created_at": "now",
+                    },
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         (src / "tasks.json").write_text("[]", encoding="utf-8")
 
         report = consolidate_data(dest, [src])

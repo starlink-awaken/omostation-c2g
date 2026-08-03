@@ -1,4 +1,5 @@
 """Tests for c2g bridge_id (Phase/Wave 推断 + Task ID 生成)."""
+
 from c2g.bridge_id import _generate_task_id, _infer_phase_wave
 
 

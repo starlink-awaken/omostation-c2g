@@ -1,14 +1,15 @@
+import subprocess
 from collections import Counter
 from pathlib import Path
-from c2g.domain import PitchSchema
+
+import yaml
 from c2g.adapters import EcosGovernanceProvider, EcosStorageProvider
 from c2g.adapters_local import LocalGovernanceProvider
 from c2g.bridge_import import _write_ecos_task
 from c2g.bridge_utils import get_omo_dir
+from c2g.domain import PitchSchema
 from c2g.strategy import _check_anomalies
 from c2g.task_builder import build_ecos_task
-import subprocess
-import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -147,7 +148,13 @@ def test_ecos_storage_provider_save_bet_uses_omo_ingress(tmp_path: Path):
     assert any(goal["id"] == "BET-aa11" for goal in goals_payload["goals"])
     # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
     assert (
-        omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "goals" / "BET-aa11.yaml"
+        omo_dir.parent
+        / "runtime"
+        / "omo"
+        / "_delivery"
+        / "ingress"
+        / "goals"
+        / "BET-aa11.yaml"
     ).exists()
 
 
@@ -166,7 +173,13 @@ def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
     assert (omo_dir / "tasks" / "planned" / "IMPORTED-broker.yaml").exists()
     # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
     assert (
-        omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml"
+        omo_dir.parent
+        / "runtime"
+        / "omo"
+        / "_delivery"
+        / "ingress"
+        / "tasks"
+        / "IMPORTED-broker.yaml"
     ).exists()
 
 
@@ -188,7 +201,7 @@ def test_scenarios_registry():
         assert sc.upstream_hint
         assert len(sc.nogos) >= 2  # YAGNI 禁区
         assert len(sc.sections) >= 2  # 场景专属小节
-    assert get_scenario("finance").label == "财务"
+    assert get_scenario("finance").label == "财务"  # type: ignore[reportOptionalMemberAccess]
     assert get_scenario(None) is None
     assert get_scenario("nonexistent") is None
 

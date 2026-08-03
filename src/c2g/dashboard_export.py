@@ -90,9 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     payload = build_dashboard(args.data_dir, horizon=args.horizon)
-    text = json.dumps(
-        payload, ensure_ascii=False, indent=2 if args.pretty else None
-    )
+    text = json.dumps(payload, ensure_ascii=False, indent=2 if args.pretty else None)
 
     if args.write:
         out = args.write

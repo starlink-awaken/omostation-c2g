@@ -4,16 +4,16 @@ ports.py 是 Protocol 定义 (IGovernanceProvider / IStorageProvider),
 无 @runtime_checkable, 所以 isinstance 检查在 runtime 不可用。
 本测试通过 inspect.signature 验证契约结构, 并通过 mock 实现验证行为。
 """
+
 from __future__ import annotations
 
 import inspect
-from typing import List
 
 from c2g.domain import BetSchema, PitchSchema, TaskSchema
 from c2g.ports import IGovernanceProvider, IStorageProvider
 
-
 # ── Mock 实现用于 Protocol 契约测试 ──
+
 
 class _ValidGovernanceProvider:
     """完全符合 IGovernanceProvider 契约"""
@@ -40,13 +40,13 @@ class _ValidStorageProvider:
     def save_task(self, task: TaskSchema) -> str:
         return task.task_id
 
-    def get_pitches(self) -> List[PitchSchema]:
+    def get_pitches(self) -> list[PitchSchema]:
         return list(self._pitches.values())
 
     def delete_pitch(self, pitch_id: str) -> bool:
         return self._pitches.pop(pitch_id, None) is not None
 
-    def get_active_bets(self) -> List[BetSchema]:
+    def get_active_bets(self) -> list[BetSchema]:
         return [b for b in self._bets.values() if b.status == "active"]
 
 
@@ -69,13 +69,13 @@ class _BrokenStorageProvider:
     def save_task(self) -> str:  # wrong signature
         return ""
 
-    def get_pitches(self) -> List[PitchSchema]:
+    def get_pitches(self) -> list[PitchSchema]:
         return []
 
     def delete_pitch(self, pitch_id: str) -> bool:
         return False
 
-    def get_active_bets(self) -> List[BetSchema]:
+    def get_active_bets(self) -> list[BetSchema]:
         return []
 
 
@@ -92,6 +92,7 @@ class _ValidBet(BetSchema):
 
 
 # ── Helper ──
+
 
 def _non_self_params(protocol_cls, method_name: str) -> list[str]:
     """Return non-self parameters of a Protocol method."""
@@ -142,20 +143,25 @@ class TestIGovernanceProviderStructuralContract:
 class TestIGovernanceProviderBehavior:
     def test_validate_pitch_accepts_valid(self):
         provider = _ValidGovernanceProvider()
-        p = _ValidPitch(pitch_id="P-1", title="Valid title",
-                       content="X", created_at="2026-06-22")
+        p = _ValidPitch(
+            pitch_id="P-1", title="Valid title", content="X", created_at="2026-06-22"
+        )
         assert provider.validate_pitch(p) is True
 
     def test_validate_pitch_rejects_empty(self):
         provider = _ValidGovernanceProvider()
-        p = _ValidPitch(pitch_id="P-1", title="",
-                       content="X", created_at="2026-06-22")
+        p = _ValidPitch(pitch_id="P-1", title="", content="X", created_at="2026-06-22")
         assert provider.validate_pitch(p) is False
 
     def test_validate_task_accepts_valid(self):
         provider = _ValidGovernanceProvider()
-        t = _ValidTask(task_id="T-1", title="Task", description="d",
-                       created_at="2026-06-22", updated_at="2026-06-22")
+        t = _ValidTask(
+            task_id="T-1",
+            title="Task",
+            description="d",
+            created_at="2026-06-22",
+            updated_at="2026-06-22",
+        )
         assert provider.validate_task(t) is True
 
     def test_get_current_phase_returns_string(self):
@@ -174,8 +180,13 @@ class TestIStorageProviderStructuralContract:
     def test_protocol_has_5_methods(self):
         methods = [m for m in dir(IStorageProvider) if not m.startswith("_")]
         assert len(methods) == 5
-        for expected in ("save_bet", "save_task", "get_pitches",
-                       "delete_pitch", "get_active_bets"):
+        for expected in (
+            "save_bet",
+            "save_task",
+            "get_pitches",
+            "delete_pitch",
+            "get_active_bets",
+        ):
             assert expected in methods
 
     def test_save_bet_signature(self):
@@ -192,7 +203,7 @@ class TestIStorageProviderStructuralContract:
 
     def test_get_pitches_signature(self):
         sig = inspect.signature(IStorageProvider.get_pitches)
-        assert sig.return_annotation == List[PitchSchema]
+        assert sig.return_annotation == list[PitchSchema]
 
     def test_delete_pitch_signature(self):
         params = _non_self_params(IStorageProvider, "delete_pitch")
@@ -202,8 +213,13 @@ class TestIStorageProviderStructuralContract:
 
     def test_valid_mock_has_all_methods(self):
         store = _ValidStorageProvider()
-        for method in ("save_bet", "save_task", "get_pitches",
-                      "delete_pitch", "get_active_bets"):
+        for method in (
+            "save_bet",
+            "save_task",
+            "get_pitches",
+            "delete_pitch",
+            "get_active_bets",
+        ):
             assert hasattr(store, method)
 
     def test_broken_mock_wrong_save_task_signature(self):
@@ -216,8 +232,9 @@ class TestIStorageProviderStructuralContract:
 class TestIStorageProviderBehavior:
     def test_save_bet_roundtrip(self):
         store = _ValidStorageProvider()
-        bet = _ValidBet(goal_id="G-1", title="B", description="d",
-                        created_at="2026-06-22")
+        bet = _ValidBet(
+            goal_id="G-1", title="B", description="d", created_at="2026-06-22"
+        )
         returned_id = store.save_bet(bet)
         assert returned_id == "G-1"
         active = store.get_active_bets()
@@ -226,8 +243,9 @@ class TestIStorageProviderBehavior:
 
     def test_save_and_get_pitches_roundtrip(self):
         store = _ValidStorageProvider()
-        pitch = _ValidPitch(pitch_id="P-1", title="X",
-                            content="content", created_at="now")
+        pitch = _ValidPitch(
+            pitch_id="P-1", title="X", content="content", created_at="now"
+        )
         store._pitches[pitch.pitch_id] = pitch
         pitches = store.get_pitches()
         assert len(pitches) == 1
@@ -235,8 +253,9 @@ class TestIStorageProviderBehavior:
 
     def test_delete_pitch_removes(self):
         store = _ValidStorageProvider()
-        pitch = _ValidPitch(pitch_id="P-1", title="X",
-                            content="content", created_at="now")
+        pitch = _ValidPitch(
+            pitch_id="P-1", title="X", content="content", created_at="now"
+        )
         store._pitches[pitch.pitch_id] = pitch
         assert store.delete_pitch("P-1") is True
         assert store.get_pitches() == []
@@ -247,10 +266,16 @@ class TestIStorageProviderBehavior:
 
     def test_get_active_bets_filters(self):
         store = _ValidStorageProvider()
-        active_bet = _ValidBet(goal_id="G-1", title="A", description="d",
-                               status="active", created_at="now")
-        archived_bet = _ValidBet(goal_id="G-2", title="B", description="d",
-                                 status="archived", created_at="now")
+        active_bet = _ValidBet(
+            goal_id="G-1", title="A", description="d", status="active", created_at="now"
+        )
+        archived_bet = _ValidBet(
+            goal_id="G-2",
+            title="B",
+            description="d",
+            status="archived",
+            created_at="now",
+        )
         store.save_bet(active_bet)
         store.save_bet(archived_bet)
         active = store.get_active_bets()
@@ -259,8 +284,13 @@ class TestIStorageProviderBehavior:
 
     def test_save_task_returns_id(self):
         store = _ValidStorageProvider()
-        task = _ValidTask(task_id="T-1", title="X", description="d",
-                          created_at="now", updated_at="now")
+        task = _ValidTask(
+            task_id="T-1",
+            title="X",
+            description="d",
+            created_at="now",
+            updated_at="now",
+        )
         assert store.save_task(task) == "T-1"
 
 
@@ -272,13 +302,17 @@ class TestProtocolBehaviorDocs:
 
     def test_governance_provider_duck_typing(self):
         """Protocol 不强制 registration, 任何符合方法签名的类都满足"""
+
         class _Duck:
             def validate_pitch(self, pitch):
                 return True
+
             def validate_task(self, task):
                 return True
+
             def get_current_phase(self):
                 return "duck"
+
         duck = _Duck()
         assert hasattr(duck, "validate_pitch")
         assert hasattr(duck, "validate_task")
@@ -298,10 +332,13 @@ class TestProtocolBehaviorDocs:
         """每个 method 都有 docstring — 防契约文档漂移"""
         for method in ("validate_pitch", "validate_task", "get_current_phase"):
             doc = getattr(IGovernanceProvider, method).__doc__
-            assert doc and len(doc.strip()) > 5, \
-                f"{method} missing or short docstring"
-        for method in ("save_bet", "save_task", "get_pitches",
-                      "delete_pitch", "get_active_bets"):
+            assert doc and len(doc.strip()) > 5, f"{method} missing or short docstring"
+        for method in (
+            "save_bet",
+            "save_task",
+            "get_pitches",
+            "delete_pitch",
+            "get_active_bets",
+        ):
             doc = getattr(IStorageProvider, method).__doc__
-            assert doc and len(doc.strip()) > 5, \
-                f"{method} missing or short docstring"
+            assert doc and len(doc.strip()) > 5, f"{method} missing or short docstring"

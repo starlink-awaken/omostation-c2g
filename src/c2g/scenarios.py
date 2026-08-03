@@ -108,4 +108,4 @@ def get_scenario(key: str | None) -> Scenario | None:
     return SCENARIOS.get(key)
 
 
-__all__ = ("Scenario", "SCENARIOS", "get_scenario")
+__all__ = ("SCENARIOS", "Scenario", "get_scenario")

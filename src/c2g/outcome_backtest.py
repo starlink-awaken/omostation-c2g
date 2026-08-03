@@ -15,7 +15,9 @@ from c2g.outcome_tracker import OutcomeTracker
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="C2G OutcomeTracker backtest (ADR-0183 Phase A)")
+    ap = argparse.ArgumentParser(
+        description="C2G OutcomeTracker backtest (ADR-0183 Phase A)"
+    )
     ap.add_argument(
         "--data-dir",
         type=Path,

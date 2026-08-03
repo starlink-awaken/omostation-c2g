@@ -2,8 +2,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from .bridge_utils import get_c2g_data_dir, get_omo_dir
 from .bridge_import import _import_bmad, _import_fast_track, _import_pitch
+from .bridge_utils import get_c2g_data_dir, get_omo_dir
+
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
@@ -49,6 +50,7 @@ def main(argv: list[str]) -> int:
         _import_pitch(source, omo_dir, args.adapter)
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

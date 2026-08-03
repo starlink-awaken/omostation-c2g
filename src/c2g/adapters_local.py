@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
-from typing import List
+
+from .domain import BetSchema, PitchSchema, TaskSchema
 from .ports import IGovernanceProvider, IStorageProvider
-from .domain import PitchSchema, BetSchema, TaskSchema
+
 
 class LocalGovernanceProvider(IGovernanceProvider):
     def validate_pitch(self, pitch: PitchSchema) -> bool:
@@ -18,6 +19,7 @@ class LocalGovernanceProvider(IGovernanceProvider):
 
     def get_current_phase(self) -> str:
         return "Local Default Phase"
+
 
 class LocalStorageProvider(IStorageProvider):
     def __init__(self, base_dir: str = ".c2g_data"):
@@ -45,7 +47,9 @@ class LocalStorageProvider(IStorageProvider):
                 break
         else:
             data.append(record)
-        self.bets_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.bets_file.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         return bet.goal_id
 
     def save_task(self, task: TaskSchema) -> str:
@@ -58,7 +62,9 @@ class LocalStorageProvider(IStorageProvider):
                 break
         else:
             data.append(record)
-        self.tasks_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.tasks_file.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         return task.task_id
 
     def update_bet_status(self, goal_id: str, status: str) -> bool:
@@ -75,7 +81,7 @@ class LocalStorageProvider(IStorageProvider):
             )
         return changed
 
-    def get_all_bets(self) -> List[BetSchema]:
+    def get_all_bets(self) -> list[BetSchema]:
         data = json.loads(self.bets_file.read_text(encoding="utf-8"))
         return [BetSchema(**d) for d in data]
 
@@ -90,16 +96,15 @@ class LocalStorageProvider(IStorageProvider):
             )
         return removed
 
-    def get_pitches(self) -> List[PitchSchema]:
+    def get_pitches(self) -> list[PitchSchema]:
         pitches = []
         for pf in self.pitches_dir.glob("*.md"):
             content = pf.read_text(encoding="utf-8")
-            pitches.append(PitchSchema(
-                pitch_id=pf.name,
-                title=pf.stem,
-                content=content,
-                created_at=""
-            ))
+            pitches.append(
+                PitchSchema(
+                    pitch_id=pf.name, title=pf.stem, content=content, created_at=""
+                )
+            )
         return pitches
 
     def delete_pitch(self, pitch_id: str) -> bool:
@@ -109,12 +114,12 @@ class LocalStorageProvider(IStorageProvider):
             return True
         return False
 
-    def get_active_bets(self) -> List[BetSchema]:
+    def get_active_bets(self) -> list[BetSchema]:
         data = json.loads(self.bets_file.read_text(encoding="utf-8"))
         return [BetSchema(**d) for d in data if d.get("status") == "active"]
 
 
-def _dedup_by_key(records: List[dict], key: str) -> tuple[List[dict], int]:
+def _dedup_by_key(records: list[dict], key: str) -> tuple[list[dict], int]:
     """Dedup records by `key`, keeping first occurrence. Returns (kept, dropped)."""
     seen: dict = {}
     dropped = 0

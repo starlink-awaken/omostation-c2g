@@ -1,16 +1,15 @@
-from typing import List
 from pathlib import Path
 
 import yaml
 
-from .ports import IGovernanceProvider, IStorageProvider
-from .domain import PitchSchema, BetSchema, TaskSchema
+from .domain import BetSchema, PitchSchema, TaskSchema
 from .omo_client import (
     _import_omo_module,
     create_goal_via_broker,
     create_planned_task_via_broker,
     validate_planned_task_data,
 )
+from .ports import IGovernanceProvider, IStorageProvider
 
 
 class EcosGovernanceProvider(IGovernanceProvider):
@@ -116,7 +115,7 @@ class EcosStorageProvider(IStorageProvider):
         )
         return task.task_id
 
-    def get_pitches(self) -> List[PitchSchema]:
+    def get_pitches(self) -> list[PitchSchema]:
         sandbox_dir = self.omo_dir.parent / "runtime" / "sandbox" / "pitches"
         if not sandbox_dir.exists():
             return []
@@ -152,7 +151,7 @@ class EcosStorageProvider(IStorageProvider):
             return True
         return False
 
-    def get_active_bets(self) -> List[BetSchema]:
+    def get_active_bets(self) -> list[BetSchema]:
         goals_file = self.omo_dir / "goals" / "current.yaml"
         if not goals_file.exists():
             return []
@@ -175,7 +174,7 @@ class EcosStorageProvider(IStorageProvider):
         return bets
 
 
-def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):
+def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):  # type: ignore[reportArgumentType]
     """
     Dependency Injection point.
     adapter_type can be 'ecos' (default for eCOS workspace) or 'local' (standalone usage).

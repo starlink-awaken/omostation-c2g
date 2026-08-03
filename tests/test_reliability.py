@@ -1,4 +1,3 @@
-
 """测试 Reliability 模块"""
 
 from c2g.reliability import C2GSafetyGuard, FallbackTaskGenerator
@@ -6,10 +5,10 @@ from c2g.reliability import C2GSafetyGuard, FallbackTaskGenerator
 
 def test_validation():
     guard = C2GSafetyGuard()
-    
+
     result = guard.validate_pitch_format_loosely("")
     assert not result.valid
-    
+
     result = guard.validate_pitch_format_loosely("# My Pitch\ncontent")
     assert result.valid
 

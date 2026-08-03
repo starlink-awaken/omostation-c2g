@@ -5,8 +5,8 @@ from pathlib import Path
 
 import yaml
 
-from .bridge_id import _generate_task_id, _infer_phase_wave
 from .bridge_depend import _resolve_depends_on
+from .bridge_id import _generate_task_id, _infer_phase_wave
 from .omo_client import create_planned_task_via_broker, validate_planned_task_data
 from .task_builder import build_ecos_task, build_local_task
 
@@ -62,8 +62,9 @@ def _validate_ecos_task(task_data: dict) -> bool:
             return False
         return True
     except ImportError:
-        import httpx
         import json
+
+        import httpx
 
         try:
             response = httpx.post(

@@ -4,10 +4,10 @@ from pathlib import Path
 
 from c2g.bridge import _import_pitch, get_omo_dir
 from c2g.bridge_utils import get_c2g_data_dir
-from c2g.scenarios import SCENARIOS, get_scenario
-from c2g.strategy import strategy_audit, strategy_gc
 from c2g.outcome_tracker import OutcomeTracker
 from c2g.pitch_analyzer import PitchIntelligenceAnalyzer
+from c2g.scenarios import SCENARIOS, get_scenario
+from c2g.strategy import strategy_audit, strategy_gc
 
 
 def _slugify(text: str, max_len: int = 30) -> str:
@@ -84,23 +84,21 @@ def main(argv: list[str] | None = None) -> int:
     parser_gc.add_argument(
         "--dry-run", action="store_true", help="Preview GC without moving files"
     )
-    
+
     # 5. Outcome tracking (NEW) - Pitch 效果追踪
     parser_outcome = subparsers.add_parser(
         "outcome", help="[NEW] Track Pitch outcome tracking"
     )
-    outcome_subparsers = parser_outcome.add_subparsers(dest="outcome_command", required=True)
-    outcome_subparsers.add_parser(
-        "list", help="List all tracked Pitch outcomes"
+    outcome_subparsers = parser_outcome.add_subparsers(
+        dest="outcome_command", required=True
     )
+    outcome_subparsers.add_parser("list", help="List all tracked Pitch outcomes")
     outcome_track = outcome_subparsers.add_parser(
         "track", help="Track a specific Pitch"
     )
     outcome_track.add_argument("pitch_id", type=str, help="Pitch ID to track")
-    outcome_subparsers.add_parser(
-        "analyze", help="Analyze Pitch success factors"
-    )
-    
+    outcome_subparsers.add_parser("analyze", help="Analyze Pitch success factors")
+
     # 6. Pitch suggest (NEW) - Pitch 改进建议
     parser_suggest = subparsers.add_parser(
         "suggest", help="[NEW] Get Pitch improvement suggestions"
@@ -235,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.outcome_command == "track":
             lifecycle = tracker.track_pitch_lifecycle(args.pitch_id)
             if lifecycle:
-                print(f"📊 [Outcome] Pitch 完整生命周期:")
+                print("📊 [Outcome] Pitch 完整生命周期:")
                 print(f"  Pitch ID: {lifecycle.pitch_id}")
                 print(f"  路径: {lifecycle.pitch_path}")
                 print(f"  创建于: {lifecycle.created_at}")
@@ -264,14 +262,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"❌ Error: Pitch file {pitch_path} not found.")
             return 1
         content = pitch_path.read_text(encoding="utf-8")
-        
+
         tracker = OutcomeTracker(get_c2g_data_dir())
         analyzer = PitchIntelligenceAnalyzer(tracker)
-        
+
         # 预测成功率
         prob = analyzer.predict_pitch_success_probability(content)
         print(f"📈 [Pitch Intelligence] 预测成功率: {prob:.0%}")
-        
+
         # 生成改进建议
         suggestions = analyzer.suggest_pitch_improvements(content)
         print("💡 [Pitch Intelligence] 改进建议:")

@@ -6,7 +6,8 @@ test_parser_robust.py — narrative markdown 鲁棒提取测试
 2. 纯 narrative 失败处理 (回退到 mock)
 3. 直接 JSON 数组/对象 (老路径，优先级 2)
 """
-from c2g.llm import _parse_json_result, _mock_extract
+
+from c2g.llm import _mock_extract, _parse_json_result
 
 
 class TestParseJsonResult:

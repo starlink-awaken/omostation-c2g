@@ -1,8 +1,10 @@
 """Tests for c2g LocalGovernanceProvider + LocalStorageProvider."""
+
 import json
 from pathlib import Path
-from c2g.domain import PitchSchema, BetSchema, TaskSchema
+
 from c2g.adapters_local import LocalGovernanceProvider, LocalStorageProvider
+from c2g.domain import BetSchema, PitchSchema, TaskSchema
 
 
 class TestLocalGovernanceProvider:
@@ -20,16 +22,25 @@ class TestLocalGovernanceProvider:
 
     def test_validate_task_requires_title(self):
         gov = LocalGovernanceProvider()
-        t_ok = TaskSchema(task_id="T1", title="work", description="d",
-                          created_at="now", updated_at="now")
+        t_ok = TaskSchema(
+            task_id="T1",
+            title="work",
+            description="d",
+            created_at="now",
+            updated_at="now",
+        )
         assert gov.validate_task(t_ok) is True
-        t_no_title = TaskSchema(task_id="T2", title="", description="d",
-                                created_at="now", updated_at="now")
+        t_no_title = TaskSchema(
+            task_id="T2", title="", description="d", created_at="now", updated_at="now"
+        )
         assert gov.validate_task(t_no_title) is False
 
     def test_current_phase_default(self):
         gov = LocalGovernanceProvider()
-        assert "Phase" in gov.get_current_phase() or "phase" in gov.get_current_phase().lower()
+        assert (
+            "Phase" in gov.get_current_phase()
+            or "phase" in gov.get_current_phase().lower()
+        )
 
 
 class TestLocalStorageProvider:
@@ -41,7 +52,9 @@ class TestLocalStorageProvider:
 
     def test_save_and_get_bet(self, tmp_path: Path):
         store = LocalStorageProvider(base_dir=str(tmp_path / "c2g"))
-        bet = BetSchema(goal_id="G-001", title="Test Bet", description="d", created_at="now")
+        bet = BetSchema(
+            goal_id="G-001", title="Test Bet", description="d", created_at="now"
+        )
         store.save_bet(bet)
         active = store.get_active_bets()
         assert len(active) == 1
@@ -49,8 +62,13 @@ class TestLocalStorageProvider:
 
     def test_save_task(self, tmp_path: Path):
         store = LocalStorageProvider(base_dir=str(tmp_path / "c2g"))
-        task = TaskSchema(task_id="T-001", title="work", description="d",
-                          created_at="now", updated_at="now")
+        task = TaskSchema(
+            task_id="T-001",
+            title="work",
+            description="d",
+            created_at="now",
+            updated_at="now",
+        )
         store.save_task(task)
         data = json.loads((tmp_path / "c2g" / "tasks.json").read_text())
         assert len(data) == 1

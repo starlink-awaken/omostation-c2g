@@ -1,4 +1,3 @@
-
 """Pitch 智能分析模块"""
 
 from __future__ import annotations
@@ -40,7 +39,9 @@ class PitchIntelligenceAnalyzer:
         try:
             from c2g.predictive import blend_prior, outcomes_time_series
 
-            series = outcomes_time_series(getattr(self.outcome_tracker, "_outcomes", {}))
+            series = outcomes_time_series(
+                getattr(self.outcome_tracker, "_outcomes", {})
+            )
             if series:
                 hist_mean = sum(series) / len(series)
                 score = blend_prior(score, hist_mean, n=len(series))
@@ -59,11 +60,25 @@ class PitchIntelligenceAnalyzer:
         suggestions = []
         checks = [
             ("Upstream", "Upstream", "战略对齐", "建议明确 Upstream"),
-            ("Appetite", "Appetite", "范围控制", "建议明确时间预算")
+            ("Appetite", "Appetite", "范围控制", "建议明确时间预算"),
         ]
         for key, check_str, category, message in checks:
             if key not in pitch_content or "待填" in pitch_content:
-                suggestions.append({"category": category, "priority": len(suggestions)+1, "message": message, "status": "missing"})
+                suggestions.append(
+                    {
+                        "category": category,
+                        "priority": len(suggestions) + 1,
+                        "message": message,
+                        "status": "missing",
+                    }
+                )
             else:
-                suggestions.append({"category": category, "priority": len(suggestions)+1, "message": f"✓ {category} 已设置", "status": "ok"})
+                suggestions.append(
+                    {
+                        "category": category,
+                        "priority": len(suggestions) + 1,
+                        "message": f"✓ {category} 已设置",
+                        "status": "ok",
+                    }
+                )
         return suggestions

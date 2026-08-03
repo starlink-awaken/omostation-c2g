@@ -39,7 +39,7 @@ def test_declining_trend_proposal(tmp_path: Path):
         pid = f"p{i}"
         t.track_pitch_creation(pid, f"/{i}")
         t._outcomes[pid]["success_score"] = score
-        t._outcomes[pid]["created_at"] = f"2024-0{i+1}-01T00:00:00Z"
+        t._outcomes[pid]["created_at"] = f"2024-0{i + 1}-01T00:00:00Z"
     t._save_outcomes()
     r = build_proposals(t._outcomes)
     assert r["forecast_summary"]["trend"] == "declining"

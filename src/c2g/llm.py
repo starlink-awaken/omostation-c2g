@@ -1,11 +1,10 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import httpx
 import yaml
-
 
 # LLM Gateway endpoint — 可配置，默认 localhost:9290
 _LLM_GATEWAY_URL = os.environ.get("C2G_LLM_URL", "http://localhost:9290/v1/generate")
@@ -16,12 +15,32 @@ def _find_cognitive_framework_dir() -> Path | None:
     here = Path(__file__).resolve()
     candidates: list[Path] = []
     for parent in here.parents:
-        candidates.append(parent / "projects" / "ecos" / "src" / "ecos" / "ssot" / "mof" / "m1" / "cognitive_framework")
-        candidates.append(parent / "ecos" / "src" / "ecos" / "ssot" / "mof" / "m1" / "cognitive_framework")
+        candidates.append(
+            parent
+            / "projects"
+            / "ecos"
+            / "src"
+            / "ecos"
+            / "ssot"
+            / "mof"
+            / "m1"
+            / "cognitive_framework"
+        )
+        candidates.append(
+            parent
+            / "ecos"
+            / "src"
+            / "ecos"
+            / "ssot"
+            / "mof"
+            / "m1"
+            / "cognitive_framework"
+        )
     for candidate in candidates:
         if candidate.is_dir():
             return candidate
     return None
+
 
 def _load_cognitive_cartridges() -> str:
     """动态加载 M1 层的认知卡带"""
@@ -33,14 +52,17 @@ def _load_cognitive_cartridges() -> str:
                 with f.open("r", encoding="utf-8") as file:
                     data = yaml.safe_load(file)
                     if data and data.get("type") == "CognitiveFramework":
-                        frameworks.append(f"- {data.get('id')}: {data.get('name')} ({data.get('description')})")
+                        frameworks.append(
+                            f"- {data.get('id')}: {data.get('name')} ({data.get('description')})"
+                        )
             except Exception:  # noqa: BLE001  # defensive fallback
                 pass
     if not frameworks:
         return "无可用卡带"
     return "\n".join(frameworks)
 
-def _parse_json_result(result_text: str) -> list[Dict[str, Any]]:
+
+def _parse_json_result(result_text: str) -> list[dict[str, Any]]:
     """
     鲁棒 JSON 提取：优先级 1 = markdown ```json 块，优先级 2 = 裸 { 或 [。
     失败时返回 None（由调用方决定是否回退）。
@@ -49,6 +71,7 @@ def _parse_json_result(result_text: str) -> list[Dict[str, Any]]:
 
     # 优先级 1: 提取 ```json ... ``` 块 (re.DOTALL, 非贪婪)
     import re
+
     m = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
     if m:
         json_str = m.group(1).strip()
@@ -74,12 +97,11 @@ def _parse_json_result(result_text: str) -> list[Dict[str, Any]]:
                 except json.JSONDecodeError:
                     continue
             # 全部失败，放弃
-            pass
 
-    return None
+    return None  # type: ignore[reportReturnType]
 
 
-def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
+def extract_tasks_from_pitch(pitch_content: str) -> list[dict[str, Any]]:
     """
     通过 AetherForge LLM-Gateway 将 Markdown Pitch 解析为结构化的 OMO 任务列表。
     如果 LLM-Gateway 服务不可用，则自动回退到 Mock 逻辑。
@@ -112,10 +134,7 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
     请严格返回合法的 JSON 数组，不要包含 ```json 等 Markdown 标记，直接返回内容。
     """
 
-    payload = {
-        "prompt": prompt,
-        "model": None
-    }
+    payload = {"prompt": prompt, "model": None}
 
     try:
         # 使用 trust_env=False 避免本地代理报错 (socksio)
@@ -140,15 +159,16 @@ def extract_tasks_from_pitch(pitch_content: str) -> list[Dict[str, Any]]:
             tasks = [tasks]
 
         print("  ✅ 成功通过 LLM-Gateway 完成智能拆解！")
-        return tasks
+        return tasks  # type: ignore[reportReturnType]
     except Exception as e:  # noqa: BLE001  # defensive fallback
         import traceback
+
         print(f"  ⚠️ LLM-Gateway 请求失败或返回非预期格式: {e}，回退到 Mock 逻辑。")
         traceback.print_exc()
         return _mock_extract(pitch_content)
 
 
-def _mock_extract(pitch_content: str) -> list[Dict[str, Any]]:
+def _mock_extract(pitch_content: str) -> list[dict[str, Any]]:
     """
     当 LLM Gateway 不可用时，基于 Pitch 的 frontmatter 和 The What 章节生成一个合理的默认任务。
     避免对所有 Pitch 都返回固定的 'Cognitive Cartridges' 任务。
@@ -196,4 +216,3 @@ def _mock_extract(pitch_content: str) -> list[Dict[str, Any]]:
             "test_plan": test_plan,
         }
     ]
-

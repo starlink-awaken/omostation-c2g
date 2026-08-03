@@ -87,7 +87,7 @@ def test_pitch_analyzer_blends_history(tmp_path: Path):
         pid = f"p{i}"
         t.track_pitch_creation(pid, f"/{i}")
         t._outcomes[pid]["success_score"] = 0.2
-        t._outcomes[pid]["created_at"] = f"2024-01-{i+1:02d}T00:00:00Z"
+        t._outcomes[pid]["created_at"] = f"2024-01-{i + 1:02d}T00:00:00Z"
     t._save_outcomes()
     analyzer = PitchIntelligenceAnalyzer(t)
     good = "# X\nUpstream: done\nAppetite: 1d\nAcceptance: yes\nRisk: low\n"

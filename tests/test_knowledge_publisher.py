@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import httpx
-import pytest
 from c2g.knowledge_publisher import publish_outcome_card, publish_predictive_card
 from c2g.outcome_tracker import OutcomeTracker
 from c2g.predictive_report import build_report

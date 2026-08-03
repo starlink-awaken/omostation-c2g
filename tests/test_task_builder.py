@@ -1,6 +1,6 @@
 """Tests for c2g task_builder — 消除 _import_bmad/_fast_track/_pitch 重复构造"""
-from __future__ import annotations
 
+from __future__ import annotations
 
 from c2g.task_builder import (
     _governance_refs,
@@ -21,8 +21,9 @@ class TestGovernanceRefs:
     def test_includes_x1_x4_truth_registry(self):
         refs = _governance_refs()
         for prefix in ("x1-", "x2-", "x3-", "x4-"):
-            assert any(p.startswith(f".omo/_truth/{prefix}") for p in refs), \
+            assert any(p.startswith(f".omo/_truth/{prefix}") for p in refs), (
                 f"missing {prefix} truth registry"
+            )
 
     def test_returns_fresh_list_each_call(self):
         """防止 governance_refs 被多次引用导致同一 list 反复 extend"""
@@ -58,7 +59,10 @@ class TestBuildEcosTask:
 
     def test_metadata_block(self):
         task = build_ecos_task(task_id="T-001", title="X")
-        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
+        assert (
+            task["metadata"]["governance_stack"]
+            == "state_plane.kernel_plane.ingress_plane"
+        )
         assert task["metadata"]["ingress_plane"] == "projects/c2g"
 
     def test_context_uri_default(self):
@@ -66,13 +70,15 @@ class TestBuildEcosTask:
         assert task["context_uri"] == "bos://memory/tasks/T-007"
 
     def test_context_uri_override(self):
-        task = build_ecos_task(task_id="T-007", title="X",
-                              context_uri="bos://custom/path")
+        task = build_ecos_task(
+            task_id="T-007", title="X", context_uri="bos://custom/path"
+        )
         assert task["context_uri"] == "bos://custom/path"
 
     def test_explicit_dependencies(self):
         task = build_ecos_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             depends_on=["T-002", "T-003"],
             source_docs=["docs/spec.md", "docs/adr.md"],
             deliverables=["deliverable1"],
@@ -89,7 +95,8 @@ class TestBuildEcosTask:
 
     def test_extra_overrides_top_level(self):
         task = build_ecos_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             extra={"title": "Overridden Title", "custom_field": "custom_value"},
         )
         assert task["title"] == "Overridden Title"
@@ -97,7 +104,8 @@ class TestBuildEcosTask:
 
     def test_extra_metadata_merged(self):
         task = build_ecos_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             extra={"metadata": {"extra_key": "extra_value"}},
         )
         assert task["metadata"]["extra_key"] == "extra_value"
@@ -106,11 +114,15 @@ class TestBuildEcosTask:
 
     def test_extra_metadata_non_dict_ignored(self):
         task = build_ecos_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             extra={"metadata": "not a dict"},
         )
         # metadata still has the original keys
-        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
+        assert (
+            task["metadata"]["governance_stack"]
+            == "state_plane.kernel_plane.ingress_plane"
+        )
 
     def test_extra_empty_dict_no_change(self):
         task = build_ecos_task(task_id="T-001", title="X", extra={})
@@ -169,6 +181,7 @@ class TestBuildLocalTask:
         assert task["created_at"].endswith("Z")
         # parseable as UTC
         from datetime import datetime
+
         dt = datetime.fromisoformat(task["created_at"].replace("Z", "+00:00"))
         assert dt.tzinfo is not None
 
@@ -196,7 +209,8 @@ class TestBuildLocalTask:
 
     def test_extra_merged_into_task(self):
         task = build_local_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             extra={"description": "detailed", "priority": "P0"},
         )
         assert task["description"] == "detailed"
@@ -204,12 +218,16 @@ class TestBuildLocalTask:
 
     def test_extra_metadata_merged_into_metadata(self):
         task = build_local_task(
-            task_id="T-001", title="X",
+            task_id="T-001",
+            title="X",
             extra={"metadata": {"risk_level": "L2"}},
         )
         assert task["metadata"]["risk_level"] == "L2"
         # existing keys preserved
-        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
+        assert (
+            task["metadata"]["governance_stack"]
+            == "state_plane.kernel_plane.ingress_plane"
+        )
 
     def test_local_status_override(self):
         task = build_local_task(task_id="T-001", title="X", status="in_progress")

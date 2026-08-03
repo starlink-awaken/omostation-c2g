@@ -1,4 +1,3 @@
-
 """C2G 可靠性加固模块"""
 
 from __future__ import annotations
@@ -22,7 +21,9 @@ class C2GSafetyGuard:
         has_title = any(line.strip().startswith("# ") for line in content.split("\n"))
         if not has_title:
             warnings.append("建议添加一级标题")
-        return ValidationResult(len(content.strip()) > 10, errors, warnings, suggestions)
+        return ValidationResult(
+            len(content.strip()) > 10, errors, warnings, suggestions
+        )
 
 
 class FallbackTaskGenerator:
@@ -32,4 +33,8 @@ class FallbackTaskGenerator:
             if line.strip().startswith("# "):
                 title = line.strip()[2:].strip()
                 break
-        return {"task_id": f"fb-{hash(pitch_path) % 10000:04d}", "title": f"探索: {title}", "status": "planned"}
+        return {
+            "task_id": f"fb-{hash(pitch_path) % 10000:04d}",
+            "title": f"探索: {title}",
+            "status": "planned",
+        }

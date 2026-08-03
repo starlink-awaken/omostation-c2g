@@ -1,4 +1,3 @@
-
 """Pitch 全链路效果追踪器"""
 
 from __future__ import annotations
@@ -6,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -59,12 +58,24 @@ class OutcomeTracker:
             yaml.dump(self._outcomes, f, allow_unicode=True, sort_keys=False)
 
     def track_pitch_creation(self, pitch_id, pitch_path):
-        now = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        self._outcomes.setdefault(pitch_id, {
-            "pitch_id": pitch_id, "pitch_path": pitch_path, "created_at": now,
-            "generated_tasks": [], "completed_tasks": [], "failed_tasks": [],
-            "success_score": 0.0, "lessons_learned": [], "total_iterations": 0, "status": "active"
-        })
+        now = (
+            datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        )
+        self._outcomes.setdefault(
+            pitch_id,
+            {
+                "pitch_id": pitch_id,
+                "pitch_path": pitch_path,
+                "created_at": now,
+                "generated_tasks": [],
+                "completed_tasks": [],
+                "failed_tasks": [],
+                "success_score": 0.0,
+                "lessons_learned": [],
+                "total_iterations": 0,
+                "status": "active",
+            },
+        )
         self._save_outcomes()
 
     def track_task_generation(self, pitch_id, task_ids):
@@ -90,7 +101,9 @@ class OutcomeTracker:
             completed = len(outcome["completed_tasks"])
             failed = len(outcome["failed_tasks"])
             if total > 0:
-                outcome["success_score"] = max(0.0, min(1.0, (completed - failed) / total))
+                outcome["success_score"] = max(
+                    0.0, min(1.0, (completed - failed) / total)
+                )
 
     def add_lessons_learned(self, pitch_id, lesson):
         if pitch_id in self._outcomes:
@@ -102,29 +115,44 @@ class OutcomeTracker:
             return None
         data = self._outcomes[pitch_id]
         return PitchLifecycle(
-            pitch_id=data["pitch_id"], pitch_path=data["pitch_path"],
-            created_at=data["created_at"], generated_tasks=data.get("generated_tasks", []),
-            completed_tasks=data.get("completed_tasks", []), failed_tasks=data.get("failed_tasks", []),
-            success_score=data.get("success_score", 0.0), lessons_learned=data.get("lessons_learned", []),
-            total_iterations=data.get("total_iterations", 0), status=data.get("status", "active")
+            pitch_id=data["pitch_id"],
+            pitch_path=data["pitch_path"],
+            created_at=data["created_at"],
+            generated_tasks=data.get("generated_tasks", []),
+            completed_tasks=data.get("completed_tasks", []),
+            failed_tasks=data.get("failed_tasks", []),
+            success_score=data.get("success_score", 0.0),
+            lessons_learned=data.get("lessons_learned", []),
+            total_iterations=data.get("total_iterations", 0),
+            status=data.get("status", "active"),
         )
 
     def analyze_pitch_success_factors(self):
         factors = SuccessFactors()
-        factors.high_success_patterns = ["明确 Upstream", "合理 Appetite", "可衡量验收标准"]
+        factors.high_success_patterns = [
+            "明确 Upstream",
+            "合理 Appetite",
+            "可衡量验收标准",
+        ]
         factors.recommended_appetite = {"小实验": "2小时-1天"}
         return factors
 
     def suggest_pitch_improvements(self, pitch_content):
         suggestions = []
         if "Upstream" not in pitch_content or "待填" in pitch_content:
-            suggestions.append(Suggestion("战略对齐", 1, "建议明确 Upstream", ["提升效率"]))
+            suggestions.append(
+                Suggestion("战略对齐", 1, "建议明确 Upstream", ["提升效率"])
+            )
         if "Appetite" not in pitch_content or "待填" in pitch_content:
             suggestions.append(Suggestion("范围控制", 2, "建议明确时间预算", ["1天"]))
         return suggestions
 
     def get_leaderboard(self, top_n=10):
-        return sorted(self._outcomes.values(), key=lambda o: o.get("success_score", 0), reverse=True)[:top_n]
+        return sorted(
+            self._outcomes.values(),
+            key=lambda o: o.get("success_score", 0),
+            reverse=True,
+        )[:top_n]
 
     def backtest_report(self) -> dict[str, Any]:
         """Wave 2 Phase A (ADR-0183): read-only closed-loop report over stored outcomes.
@@ -196,4 +224,3 @@ class OutcomeTracker:
             outcome_data=self._outcomes[pitch_id],
             agora_endpoint=agora_endpoint,
         )
-

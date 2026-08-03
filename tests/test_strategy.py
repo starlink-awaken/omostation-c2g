@@ -5,15 +5,15 @@
 - _check_anomalies 真按指标告警 (修真前 mock 无告警)
 - strategy_gc 真按 mtime 清理僵尸 pitch
 """
+
 from collections import Counter
 from pathlib import Path
 
-
 from c2g.strategy import (
-    _load_yaml_safe,
-    _list_task_files,
-    _collect_metrics,
     _check_anomalies,
+    _collect_metrics,
+    _list_task_files,
+    _load_yaml_safe,
 )
 
 
@@ -22,7 +22,7 @@ class TestLoadYamlSafe:
         f = tmp_path / "ok.yaml"
         f.write_text("id: T1\nstatus: planned\npriority: P1\n", encoding="utf-8")
         data = _load_yaml_safe(f)
-        assert data["id"] == "T1"
+        assert data["id"] == "T1"  # type: ignore[reportOptionalSubscript]
 
     def test_invalid_yaml_returns_none(self, tmp_path: Path):
         f = tmp_path / "bad.yaml"
@@ -109,14 +109,12 @@ class TestCheckAnomalies:
         m["priority"] = Counter({"P0": 6, "P1": 4})
         m["risk_level"] = Counter({"L1": 10})
         m["owner"] = Counter({"a": 5, "b": 5})
-        warnings = _check_anomalies(m, 10, omo_dir=tmp_path,
-                                   pending_metrics=m)
+        warnings = _check_anomalies(m, 10, omo_dir=tmp_path, pending_metrics=m)
         assert any("P0 任务 6 个" in w for w in warnings)
 
     def test_l3_risk_warns(self, tmp_path: Path):
         m = self._metrics(l3=1, total=10)
-        warnings = _check_anomalies(m, 10, omo_dir=tmp_path,
-                                   pending_metrics=m)
+        warnings = _check_anomalies(m, 10, omo_dir=tmp_path, pending_metrics=m)
         assert any("L3 高风险任务 1 个" in w for w in warnings)
 
     def test_owner_concentration(self, tmp_path: Path):

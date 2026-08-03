@@ -131,7 +131,10 @@ def seed_demo_outcomes(
         "pitch_count": len(tracker._outcomes),
         "mean_success_score": (
             round(
-                sum(float(o.get("success_score") or 0) for o in tracker._outcomes.values())
+                sum(
+                    float(o.get("success_score") or 0)
+                    for o in tracker._outcomes.values()
+                )
                 / max(1, len(tracker._outcomes)),
                 4,
             )
@@ -143,7 +146,9 @@ def seed_demo_outcomes(
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Seed Wave2 demo OutcomeTracker data (ADR-0193)")
+    ap = argparse.ArgumentParser(
+        description="Seed Wave2 demo OutcomeTracker data (ADR-0193)"
+    )
     ap.add_argument(
         "--data-dir",
         type=Path,

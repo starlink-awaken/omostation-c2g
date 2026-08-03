@@ -1,7 +1,7 @@
 """Wave 2 Phase B CLI — predictive report + risk heatmap (stdout JSON).
 
-  uv run --directory projects/c2g python -m c2g.predictive_report
-  uv run --directory projects/c2g python -m c2g.predictive_report --markdown
+uv run --directory projects/c2g python -m c2g.predictive_report
+uv run --directory projects/c2g python -m c2g.predictive_report --markdown
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import json
 import sys
 from pathlib import Path
 
+from c2g.knowledge_publisher import publish_predictive_card
 from c2g.outcome_tracker import OutcomeTracker
 from c2g.predictive import (
     PredictiveModel,
@@ -18,8 +19,6 @@ from c2g.predictive import (
     render_heatmap_markdown,
     risk_heatmap,
 )
-from c2g.knowledge_publisher import publish_predictive_card
-
 
 
 def _default_data_dir() -> Path:
@@ -40,7 +39,9 @@ def _default_data_dir() -> Path:
     return Path("runtime/c2g/outcomes")
 
 
-def build_report(data_dir: Path, horizon: int = 3, publish_knowledge: bool = False) -> dict:
+def build_report(
+    data_dir: Path, horizon: int = 3, publish_knowledge: bool = False
+) -> dict:
     tracker = OutcomeTracker(data_dir)
     series = outcomes_time_series(tracker._outcomes)
     model = PredictiveModel(horizon=horizon)

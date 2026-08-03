@@ -1,4 +1,3 @@
-
 """测试 OutcomeTracker"""
 
 from pathlib import Path
@@ -23,8 +22,8 @@ def test_task_completion():
         tracker.track_task_generation("p-2", ["t1", "t2", "t3"])
         tracker.track_task_completion("p-2", "t1", True)
         lifecycle = tracker.track_pitch_lifecycle("p-2")
-        assert len(lifecycle.completed_tasks) == 1
-        assert lifecycle.success_score == 1/3
+        assert len(lifecycle.completed_tasks) == 1  # type: ignore[reportOptionalMemberAccess]
+        assert lifecycle.success_score == 1 / 3  # type: ignore[reportOptionalMemberAccess]
 
 
 def test_leaderboard():
