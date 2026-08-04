@@ -45,8 +45,8 @@ class PitchIntelligenceAnalyzer:
             if series:
                 hist_mean = sum(series) / len(series)
                 score = blend_prior(score, hist_mean, n=len(series))
-        except Exception:
-            pass  # never fail prediction on tracker edge cases
+        except Exception:  # noqa: BLE001, S110  # never fail prediction on tracker edge cases
+            pass
         return max(0.0, min(1.0, score))
 
     def extract_strategic_intent(self, pitch_content):

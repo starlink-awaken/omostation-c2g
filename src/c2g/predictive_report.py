@@ -29,8 +29,6 @@ def _default_data_dir() -> Path:
     if env:
         return Path(env)
     # workspace-relative if present
-    root = Path(__file__).resolve().parents[4]  # .../projects/c2g/src/c2g → workspace?
-    # parents: c2g, src, c2g project, projects, workspace = 4 from file → projects
     # file = workspace/projects/c2g/src/c2g/predictive_report.py → parents[3]=c2g, [4]=projects
     ws = Path(__file__).resolve().parents[4]
     candidate = ws / "runtime" / "c2g" / "outcomes"
@@ -56,7 +54,7 @@ def build_report(
         "forecast": forecast,
         "heatmap": heat,
         "heatmap_markdown": render_heatmap_markdown(heat),
-        "status": "ok" if series or backtest.get("status") == "empty" else "ok",
+        "status": "ok",
     }
     if publish_knowledge:
         pub_res = publish_predictive_card(report)

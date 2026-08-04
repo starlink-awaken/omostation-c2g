@@ -170,7 +170,7 @@ def apply_proposals_as_tasks(
             )
             entry["created"] = True
             entry["result"] = created if isinstance(created, dict) else str(created)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  (per-entry defensive fallback)
             entry["created"] = False
             entry["error"] = f"{type(e).__name__}: {e}"[:200]
         results.append(entry)

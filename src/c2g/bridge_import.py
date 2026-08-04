@@ -260,7 +260,7 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
     from .adapters import get_providers
     from .llm import extract_tasks_from_pitch
 
-    gov, store = get_providers(str(base_dir), adapter)
+    _gov, store = get_providers(str(base_dir), adapter)
     print(f"🌉 [C2G v4] 正在将 Pitch 转化为 OMO Bet: {source_file.name}")
     content = source_file.read_text(encoding="utf-8")
 
@@ -284,7 +284,9 @@ def _import_pitch(source_file: Path, base_dir: Path, adapter: str = "ecos"):
         if goals_file.exists():
             from .bridge_utils import strip_frontmatter
 
-            goals_data = next(yaml.safe_load_all(strip_frontmatter(goals_file.read_text())), {})
+            goals_data = next(
+                yaml.safe_load_all(strip_frontmatter(goals_file.read_text())), {}
+            )
             existing_ids = [g.get("id") for g in goals_data.get("goals", [])]
             if bet_id in existing_ids:
                 print(f"  ⏭  Bet {bet_id} already exists, skip.")

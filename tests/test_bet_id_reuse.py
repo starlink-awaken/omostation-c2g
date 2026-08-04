@@ -14,7 +14,7 @@ def test_bet_id_reuse_graceful_skip():
     Running c2g bet twice on the same Pitch should skip gracefully
     with a friendly ⏭ message, not ❌ error.
     """
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
         [
             "uv",
             "run",
@@ -48,7 +48,7 @@ def test_bet_id_reuse_no_new_task():
     """
     Re-running bet should create 0 new tasks (skip path).
     """
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
         [
             "uv",
             "run",

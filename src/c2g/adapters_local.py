@@ -13,9 +13,7 @@ class LocalGovernanceProvider(IGovernanceProvider):
         return True
 
     def validate_task(self, task: TaskSchema) -> bool:
-        if not task.title:
-            return False
-        return True
+        return bool(task.title)
 
     def get_current_phase(self) -> str:
         return "Local Default Phase"

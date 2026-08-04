@@ -2,6 +2,7 @@
 
 import pytest
 from c2g.domain import BetSchema, PitchSchema, TaskSchema
+from pydantic import ValidationError
 
 
 class TestPitchSchema:
@@ -63,7 +64,7 @@ class TestBetSchema:
         assert b.vector == "V1"
 
     def test_bet_required_fields(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             BetSchema(
                 goal_id="x"
             )  # missing title/description/created_at  # type: ignore[reportCallIssue]

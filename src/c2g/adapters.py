@@ -174,7 +174,7 @@ class EcosStorageProvider(IStorageProvider):
         return bets
 
 
-def get_providers(base_dir_path: str = None, adapter_type: str = "ecos"):  # type: ignore[reportArgumentType]
+def get_providers(base_dir_path: str | None = None, adapter_type: str = "ecos"):
     """
     Dependency Injection point.
     adapter_type can be 'ecos' (default for eCOS workspace) or 'local' (standalone usage).

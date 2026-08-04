@@ -69,7 +69,7 @@ def _emit_via_network(
                     "slug": card_slug,
                     "response": data,
                 }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  (fallback to next strategy)
         logger.debug("Agora /v1/tools/call unreachable: %s", e)
 
     # Strategy 2: Fallback try Cockpit HTTP /api/knowledge/put
@@ -84,7 +84,7 @@ def _emit_via_network(
                     "slug": card_slug,
                     "response": data,
                 }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  (offline degradation)
         logger.debug("Cockpit HTTP /api/knowledge/put unreachable: %s", e)
 
     # Offline degradation

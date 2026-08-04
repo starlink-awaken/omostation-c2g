@@ -55,7 +55,7 @@ def _load_cognitive_cartridges() -> str:
                         frameworks.append(
                             f"- {data.get('id')}: {data.get('name')} ({data.get('description')})"
                         )
-            except Exception:  # noqa: BLE001  # defensive fallback
+            except Exception:  # noqa: BLE001, S110  # defensive fallback
                 pass
     if not frameworks:
         return "无可用卡带"

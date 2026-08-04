@@ -34,7 +34,7 @@ def test_local_governance():
 
 
 def test_cli_help():
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
         ["uv", "run", "--project", ".", "c2g", "--help"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -45,7 +45,7 @@ def test_cli_help():
 
 
 def test_cli_local_radar():
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
         ["uv", "run", "--project", ".", "c2g", "--adapter", "local", "radar"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -56,7 +56,7 @@ def test_cli_local_radar():
 
 
 def test_cli_local_gc():
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
         ["uv", "run", "--project", ".", "c2g", "--adapter", "local", "gc"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -212,7 +212,7 @@ def test_cli_brainstorm_scenario():
 
     pitch_file = PROJECT_ROOT / ".c2g_data" / "pitches" / "Idea-test-bet6-scenario.md"
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
             [
                 "uv",
                 "run",
