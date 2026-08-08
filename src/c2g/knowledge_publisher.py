@@ -48,7 +48,7 @@ def _emit_via_network(
         "metadata": {"source": "c2g.knowledge_publisher", "adr": "0296"},
     }
 
-    # Strategy 1: Try Agora /v1/tools/call -> publish_event (bos://brain/events/card_updated)
+    # Strategy 1: Try Agora /v1/tools/call -> publish_event (bos://memory/events/card_updated)
     try:
         with httpx.Client(timeout=timeout) as client:
             resp = client.post(
@@ -56,7 +56,7 @@ def _emit_via_network(
                 json={
                     "tool": "publish_event",
                     "arguments": {
-                        "event_type": "bos://brain/events/card_updated",
+                        "event_type": "bos://memory/events/card_updated",
                         "payload": payload,
                     },
                 },

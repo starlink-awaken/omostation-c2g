@@ -71,7 +71,7 @@ def test_publish_outcome_card_mock_agora(mock_client_cls):
     mock_client.post.assert_called_once()
     call_args = mock_client.post.call_args[1]["json"]
     assert call_args["tool"] == "publish_event"
-    assert call_args["arguments"]["event_type"] == "bos://brain/events/card_updated"
+    assert call_args["arguments"]["event_type"] == "bos://memory/events/card_updated"
     assert call_args["arguments"]["payload"]["slug"] == "c2g-outcome-pitch-alpha"
 
 
