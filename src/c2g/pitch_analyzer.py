@@ -39,13 +39,11 @@ class PitchIntelligenceAnalyzer:
         try:
             from c2g.predictive import blend_prior, outcomes_time_series
 
-            series = outcomes_time_series(
-                getattr(self.outcome_tracker, "_outcomes", {})
-            )
+            series = outcomes_time_series(getattr(self.outcome_tracker, "_outcomes", {}))
             if series:
                 hist_mean = sum(series) / len(series)
                 score = blend_prior(score, hist_mean, n=len(series))
-        except Exception:  # noqa: BLE001, S110  # never fail prediction on tracker edge cases
+        except Exception:  # never fail prediction on tracker edge cases
             pass
         return max(0.0, min(1.0, score))
 

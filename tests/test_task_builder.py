@@ -21,9 +21,7 @@ class TestGovernanceRefs:
     def test_includes_x1_x4_truth_registry(self):
         refs = _governance_refs()
         for prefix in ("x1-", "x2-", "x3-", "x4-"):
-            assert any(p.startswith(f".omo/_truth/{prefix}") for p in refs), (
-                f"missing {prefix} truth registry"
-            )
+            assert any(p.startswith(f".omo/_truth/{prefix}") for p in refs), f"missing {prefix} truth registry"
 
     def test_returns_fresh_list_each_call(self):
         """防止 governance_refs 被多次引用导致同一 list 反复 extend"""
@@ -59,10 +57,7 @@ class TestBuildEcosTask:
 
     def test_metadata_block(self):
         task = build_ecos_task(task_id="T-001", title="X")
-        assert (
-            task["metadata"]["governance_stack"]
-            == "state_plane.kernel_plane.ingress_plane"
-        )
+        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
         assert task["metadata"]["ingress_plane"] == "projects/c2g"
 
     def test_context_uri_default(self):
@@ -70,9 +65,7 @@ class TestBuildEcosTask:
         assert task["context_uri"] == "bos://memory/tasks/T-007"
 
     def test_context_uri_override(self):
-        task = build_ecos_task(
-            task_id="T-007", title="X", context_uri="bos://custom/path"
-        )
+        task = build_ecos_task(task_id="T-007", title="X", context_uri="bos://custom/path")
         assert task["context_uri"] == "bos://custom/path"
 
     def test_explicit_dependencies(self):
@@ -119,10 +112,7 @@ class TestBuildEcosTask:
             extra={"metadata": "not a dict"},
         )
         # metadata still has the original keys
-        assert (
-            task["metadata"]["governance_stack"]
-            == "state_plane.kernel_plane.ingress_plane"
-        )
+        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
 
     def test_extra_empty_dict_no_change(self):
         task = build_ecos_task(task_id="T-001", title="X", extra={})
@@ -224,10 +214,7 @@ class TestBuildLocalTask:
         )
         assert task["metadata"]["risk_level"] == "L2"
         # existing keys preserved
-        assert (
-            task["metadata"]["governance_stack"]
-            == "state_plane.kernel_plane.ingress_plane"
-        )
+        assert task["metadata"]["governance_stack"] == "state_plane.kernel_plane.ingress_plane"
 
     def test_local_status_override(self):
         task = build_local_task(task_id="T-001", title="X", status="in_progress")

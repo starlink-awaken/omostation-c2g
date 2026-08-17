@@ -17,6 +17,7 @@
       --source /path/to/workspace/projects/c2g \
       --set-status BET-xxxx=done --set-status BET-yyyy=deferred
 """
+
 import argparse
 import json
 import sys
@@ -53,10 +54,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Consolidate c2g bets/tasks + writeback statuses")
     ap.add_argument("--dest", required=True, help="权威数据目录 (.c2g_data)")
     ap.add_argument("--source", action="append", default=[], help="待并入源 (目录或文件), 可重复")
-    ap.add_argument("--set-status", action="append", default=[],
-                    metavar="GOAL_ID=STATUS", help="回写 bet 状态, 可重复")
-    ap.add_argument("--drop", action="append", default=[],
-                    metavar="GOAL_ID", help="删除指定 goal_id 的 bet (清垃圾), 可重复")
+    ap.add_argument("--set-status", action="append", default=[], metavar="GOAL_ID=STATUS", help="回写 bet 状态, 可重复")
+    ap.add_argument(
+        "--drop", action="append", default=[], metavar="GOAL_ID", help="删除指定 goal_id 的 bet (清垃圾), 可重复"
+    )
     ap.add_argument("--dry-run", action="store_true", help="只预览不落盘")
     args = ap.parse_args(argv)
 
@@ -64,8 +65,7 @@ def main(argv=None) -> int:
     preview = _preview(dest, args.source)
     print(f"{'[DRY-RUN] ' if args.dry_run else ''}收口预览 → {dest}")
     for fname, r in preview.items():
-        print(f"  {fname}: total={r['total']} 丢弃重复={r['dropped_duplicates']} "
-              f"并入源={len(r['sources'])}")
+        print(f"  {fname}: total={r['total']} 丢弃重复={r['dropped_duplicates']} 并入源={len(r['sources'])}")
 
     if args.dry_run:
         for gid in args.drop:

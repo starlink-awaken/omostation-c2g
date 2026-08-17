@@ -170,7 +170,7 @@ def apply_proposals_as_tasks(
             )
             entry["created"] = True
             entry["result"] = created if isinstance(created, dict) else str(created)
-        except Exception as e:  # noqa: BLE001  (per-entry defensive fallback)
+        except Exception as e:
             entry["created"] = False
             entry["error"] = f"{type(e).__name__}: {e}"[:200]
         results.append(entry)
@@ -178,9 +178,7 @@ def apply_proposals_as_tasks(
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(
-        description="Wave2 Phase C: C2G → OMO governance proposals (ADR-0188)"
-    )
+    ap = argparse.ArgumentParser(description="Wave2 Phase C: C2G → OMO governance proposals (ADR-0188)")
     ap.add_argument(
         "--data-dir",
         type=Path,

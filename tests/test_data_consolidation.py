@@ -11,9 +11,7 @@ from c2g.domain import BetSchema, TaskSchema
 
 
 def _bet(goal_id, status="active", title="T"):
-    return BetSchema(
-        goal_id=goal_id, title=title, description="d", status=status, created_at="now"
-    )
+    return BetSchema(goal_id=goal_id, title=title, description="d", status=status, created_at="now")
 
 
 class TestUpsert:

@@ -35,7 +35,7 @@ def c2g_bet(source_file: str, adapter: str = "ecos") -> str:
     try:
         _import_pitch(path, base_dir, adapter)
         return f"Successfully processed pitch: {source_file} using {adapter} adapter."
-    except Exception as e:  # noqa: BLE001  # defensive fallback
+    except Exception as e:  # defensive fallback
         return f"Error processing pitch: {e!s}"
 
 
@@ -61,7 +61,7 @@ def c2g_radar(workspace_root: str, adapter: str = "ecos") -> str:
     sys.stdout = new_stdout
     try:
         strategy_audit(base_dir, adapter)
-    except Exception as e:  # noqa: BLE001  # defensive fallback
+    except Exception as e:  # defensive fallback
         sys.stdout = old_stdout
         return f"Error running radar: {e!s}"
     finally:
@@ -91,7 +91,7 @@ def c2g_gc(workspace_root: str, adapter: str = "ecos") -> str:
     sys.stdout = new_stdout
     try:
         strategy_gc(base_dir, adapter)
-    except Exception as e:  # noqa: BLE001  # defensive fallback
+    except Exception as e:  # defensive fallback
         sys.stdout = old_stdout
         return f"Error running GC: {e!s}"
     finally:

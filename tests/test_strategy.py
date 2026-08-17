@@ -156,6 +156,4 @@ class TestCheckAnomalies:
         full = self._metrics(l3=5, total=10)  # 全量含 5 个 done L3
         pending = _collect_metrics([])  # planned 空 → 空 metrics
         warnings = _check_anomalies(full, 10, omo_dir=tmp_path, pending_metrics=pending)
-        assert not any("L3 高风险" in w for w in warnings), (
-            f"done L3 误报 (pending 空 fallback 全量): {warnings}"
-        )
+        assert not any("L3 高风险" in w for w in warnings), f"done L3 误报 (pending 空 fallback 全量): {warnings}"

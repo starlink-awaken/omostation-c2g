@@ -17,9 +17,7 @@ import httpx
 logger = logging.getLogger("c2g.knowledge_publisher")
 
 _DEFAULT_AGORA_ENDPOINT = os.environ.get("AGORA_HTTP_ENDPOINT", "http://127.0.0.1:7422")
-_DEFAULT_COCKPIT_KNOWLEDGE_URL = os.environ.get(
-    "COCKPIT_KNOWLEDGE_URL", "http://127.0.0.1:8000/api/knowledge/put"
-)
+_DEFAULT_COCKPIT_KNOWLEDGE_URL = os.environ.get("COCKPIT_KNOWLEDGE_URL", "http://127.0.0.1:8000/api/knowledge/put")
 
 
 def _emit_via_network(
@@ -69,7 +67,7 @@ def _emit_via_network(
                     "slug": card_slug,
                     "response": data,
                 }
-    except Exception as e:  # noqa: BLE001  (fallback to next strategy)
+    except Exception as e:
         logger.debug("Agora /v1/tools/call unreachable: %s", e)
 
     # Strategy 2: Fallback try Cockpit HTTP /api/knowledge/put
@@ -84,7 +82,7 @@ def _emit_via_network(
                     "slug": card_slug,
                     "response": data,
                 }
-    except Exception as e:  # noqa: BLE001  (offline degradation)
+    except Exception as e:
         logger.debug("Cockpit HTTP /api/knowledge/put unreachable: %s", e)
 
     # Offline degradation

@@ -3,7 +3,7 @@ name = "c2g"
 version = "0.1.0"
 description = "C2G: Concept-to-Goal strategic engine with IOC + Ports & Adapters"
 authors = [
-    { name = "Xiamingxing", email = "xiamingxing@example.com" }
+    { name = "Xiamingxing", email = "xiamingxing@example.com" },
 ]
 requires-python = ">=3.13"
 dependencies = [
@@ -13,19 +13,62 @@ dependencies = [
     "fastmcp>=3.4.2",
 ]
 
+[project.scripts]
+c2g = "c2g.cli:main"
+c2g-mcp = "c2g.mcp_server:mcp.run"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.19,<0.12.0"]
+requires = [
+    "uv_build>=0.11.19,<0.12.0",
+]
 build-backend = "uv_build"
 
-[project.scripts]
-c2g = "c2g.cli:main"
-c2g-mcp = "c2g.mcp_server:mcp.run"
-
 [tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
+pythonpath = [
+    "src",
+]
+testpaths = [
+    "tests",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "N",
+    "UP",
+    "S",
+    "PLE",
+    "RUF100",
+]
+ignore = [
+    "E402",
+    "E501",
+    "F401",
+    "N813",
+    "S101",
+    "S108",
+    "S110",
+    "S310",
+    "S314",
+    "S324",
+    "S603",
+    "S607",
+    "S608",
+    "SIM115",
+    "UP047",
+]
+
+[tool.ruff.format]
+quote-style = "double"

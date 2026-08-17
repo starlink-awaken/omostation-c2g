@@ -1,8 +1,9 @@
 """Tests for c2g domain models (Pydantic schemas)."""
 
 import pytest
-from c2g.domain import BetSchema, PitchSchema, TaskSchema
 from pydantic import ValidationError
+
+from c2g.domain import BetSchema, PitchSchema, TaskSchema
 
 
 class TestPitchSchema:
@@ -35,9 +36,7 @@ class TestPitchSchema:
         assert p.appetite is None
 
     def test_pitch_serializable(self):
-        p = PitchSchema(
-            pitch_id="P-003", title="Test", content="Data", created_at="now"
-        )
+        p = PitchSchema(pitch_id="P-003", title="Test", content="Data", created_at="now")
         d = p.model_dump()
         assert isinstance(d, dict)
         assert d["title"] == "Test"
@@ -65,9 +64,7 @@ class TestBetSchema:
 
     def test_bet_required_fields(self):
         with pytest.raises(ValidationError):
-            BetSchema(
-                goal_id="x"
-            )  # missing title/description/created_at  # type: ignore[reportCallIssue]
+            BetSchema(goal_id="x")  # missing title/description/created_at  # type: ignore[reportCallIssue]
 
 
 class TestTaskSchema:

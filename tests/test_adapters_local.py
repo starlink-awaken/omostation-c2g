@@ -30,17 +30,12 @@ class TestLocalGovernanceProvider:
             updated_at="now",
         )
         assert gov.validate_task(t_ok) is True
-        t_no_title = TaskSchema(
-            task_id="T2", title="", description="d", created_at="now", updated_at="now"
-        )
+        t_no_title = TaskSchema(task_id="T2", title="", description="d", created_at="now", updated_at="now")
         assert gov.validate_task(t_no_title) is False
 
     def test_current_phase_default(self):
         gov = LocalGovernanceProvider()
-        assert (
-            "Phase" in gov.get_current_phase()
-            or "phase" in gov.get_current_phase().lower()
-        )
+        assert "Phase" in gov.get_current_phase() or "phase" in gov.get_current_phase().lower()
 
 
 class TestLocalStorageProvider:
@@ -52,9 +47,7 @@ class TestLocalStorageProvider:
 
     def test_save_and_get_bet(self, tmp_path: Path):
         store = LocalStorageProvider(base_dir=str(tmp_path / "c2g"))
-        bet = BetSchema(
-            goal_id="G-001", title="Test Bet", description="d", created_at="now"
-        )
+        bet = BetSchema(goal_id="G-001", title="Test Bet", description="d", created_at="now")
         store.save_bet(bet)
         active = store.get_active_bets()
         assert len(active) == 1

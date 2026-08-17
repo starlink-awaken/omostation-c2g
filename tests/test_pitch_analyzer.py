@@ -12,9 +12,7 @@ def test_success_prediction():
         tracker = OutcomeTracker(Path(tmpdir))
         analyzer = PitchIntelligenceAnalyzer(tracker)
 
-        good_pitch = (
-            "# Test Pitch\n> **Upstream**: Improve efficiency\n> **Appetite**: 1 day"
-        )
+        good_pitch = "# Test Pitch\n> **Upstream**: Improve efficiency\n> **Appetite**: 1 day"
         score = analyzer.predict_pitch_success_probability(good_pitch)
         assert 0.0 <= score <= 1.0
 

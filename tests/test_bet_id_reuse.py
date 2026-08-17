@@ -14,7 +14,7 @@ def test_bet_id_reuse_graceful_skip():
     Running c2g bet twice on the same Pitch should skip gracefully
     with a friendly ⏭ message, not ❌ error.
     """
-    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+    result = subprocess.run(
         [
             "uv",
             "run",
@@ -31,9 +31,7 @@ def test_bet_id_reuse_graceful_skip():
         text=True,
     )
     # Should succeed (returncode 0) even on reuse
-    assert result.returncode == 0, (
-        f"Expected 0, got {result.returncode}: {result.stderr}"
-    )
+    assert result.returncode == 0, f"Expected 0, got {result.returncode}: {result.stderr}"
     # Should NOT contain the ❌ error message for already-exists
     assert "❌" not in result.stdout, f"Unexpected error in output: {result.stdout}"
     # Should contain the friendly skip message
@@ -48,7 +46,7 @@ def test_bet_id_reuse_no_new_task():
     """
     Re-running bet should create 0 new tasks (skip path).
     """
-    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+    result = subprocess.run(
         [
             "uv",
             "run",

@@ -3,6 +3,7 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
+
 from c2g.adapters import EcosGovernanceProvider, EcosStorageProvider
 from c2g.adapters_local import LocalGovernanceProvider
 from c2g.bridge_import import _write_ecos_task
@@ -15,26 +16,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_domain_schema():
-    pitch = PitchSchema(
-        pitch_id="1", title="Test", content="Data", created_at="2026-06-15"
-    )
+    pitch = PitchSchema(pitch_id="1", title="Test", content="Data", created_at="2026-06-15")
     assert pitch.title == "Test"
 
 
 def test_local_governance():
     gov = LocalGovernanceProvider()
-    pitch = PitchSchema(
-        pitch_id="1", title="Test", content="Data", created_at="2026-06-15"
-    )
+    pitch = PitchSchema(pitch_id="1", title="Test", content="Data", created_at="2026-06-15")
     assert gov.validate_pitch(pitch) is True
-    pitch_short = PitchSchema(
-        pitch_id="1", title="Te", content="Data", created_at="2026-06-15"
-    )
+    pitch_short = PitchSchema(pitch_id="1", title="Te", content="Data", created_at="2026-06-15")
     assert gov.validate_pitch(pitch_short) is False
 
 
 def test_cli_help():
-    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+    result = subprocess.run(
         ["uv", "run", "--project", ".", "c2g", "--help"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -45,7 +40,7 @@ def test_cli_help():
 
 
 def test_cli_local_radar():
-    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+    result = subprocess.run(
         ["uv", "run", "--project", ".", "c2g", "--adapter", "local", "radar"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -56,7 +51,7 @@ def test_cli_local_radar():
 
 
 def test_cli_local_gc():
-    result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+    result = subprocess.run(
         ["uv", "run", "--project", ".", "c2g", "--adapter", "local", "gc"],
         cwd=str(PROJECT_ROOT),
         capture_output=True,
@@ -75,9 +70,7 @@ def test_build_ecos_task_includes_governance_refs():
         test_plan=["pytest"],
     )
     assert ".omo/standards/omo-governance-surfaces.md" in task["governance_refs"]
-    assert (
-        ".omo/_truth/registry/omo-governance-surfaces.yaml" in task["governance_refs"]
-    )
+    assert ".omo/_truth/registry/omo-governance-surfaces.yaml" in task["governance_refs"]
     assert task["metadata"]["ingress_plane"] == "projects/c2g"
 
 
@@ -142,20 +135,10 @@ def test_ecos_storage_provider_save_bet_uses_omo_ingress(tmp_path: Path):
     )
     store.save_bet(bet)
 
-    goals_payload = yaml.safe_load(
-        (goals_dir / "current.yaml").read_text(encoding="utf-8")
-    )
+    goals_payload = yaml.safe_load((goals_dir / "current.yaml").read_text(encoding="utf-8"))
     assert any(goal["id"] == "BET-aa11" for goal in goals_payload["goals"])
     # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
-    assert (
-        omo_dir.parent
-        / "runtime"
-        / "omo"
-        / "_delivery"
-        / "ingress"
-        / "goals"
-        / "BET-aa11.yaml"
-    ).exists()
+    assert (omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "goals" / "BET-aa11.yaml").exists()
 
 
 def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
@@ -172,15 +155,7 @@ def test_write_ecos_task_uses_omo_ingress_broker(tmp_path: Path):
 
     assert (omo_dir / "tasks" / "planned" / "IMPORTED-broker.yaml").exists()
     # omo 2026-07-01 迁移: ingress artifacts 从 .omo/_delivery/ → runtime/omo/_delivery/
-    assert (
-        omo_dir.parent
-        / "runtime"
-        / "omo"
-        / "_delivery"
-        / "ingress"
-        / "tasks"
-        / "IMPORTED-broker.yaml"
-    ).exists()
+    assert (omo_dir.parent / "runtime" / "omo" / "_delivery" / "ingress" / "tasks" / "IMPORTED-broker.yaml").exists()
 
 
 def test_scenarios_registry():
@@ -212,7 +187,7 @@ def test_cli_brainstorm_scenario():
 
     pitch_file = PROJECT_ROOT / ".c2g_data" / "pitches" / "Idea-test-bet6-scenario.md"
     try:
-        result = subprocess.run(  # noqa: PLW1510  (test asserts on output)
+        result = subprocess.run(
             [
                 "uv",
                 "run",
@@ -258,12 +233,7 @@ def test_parse_pitch_frontmatter_scenario():
     assert scenario == "finance"
 
     # 无 Scenario 的通用 Pitch (向后兼容, scenario=None)
-    content_generic = (
-        "# 通用点子\n\n"
-        "> **Upstream**: MS-001\n"
-        "> **Appetite:** 2 hours\n\n"
-        "## 背景\n...\n"
-    )
+    content_generic = "# 通用点子\n\n> **Upstream**: MS-001\n> **Appetite:** 2 hours\n\n## 背景\n...\n"
     upstream2, appetite2, scenario2 = _parse_pitch_frontmatter(content_generic)
     assert upstream2 == "MS-001"
     assert appetite2 == "2 hours"

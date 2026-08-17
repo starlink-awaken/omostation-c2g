@@ -143,9 +143,7 @@ class TestIGovernanceProviderStructuralContract:
 class TestIGovernanceProviderBehavior:
     def test_validate_pitch_accepts_valid(self):
         provider = _ValidGovernanceProvider()
-        p = _ValidPitch(
-            pitch_id="P-1", title="Valid title", content="X", created_at="2026-06-22"
-        )
+        p = _ValidPitch(pitch_id="P-1", title="Valid title", content="X", created_at="2026-06-22")
         assert provider.validate_pitch(p) is True
 
     def test_validate_pitch_rejects_empty(self):
@@ -232,9 +230,7 @@ class TestIStorageProviderStructuralContract:
 class TestIStorageProviderBehavior:
     def test_save_bet_roundtrip(self):
         store = _ValidStorageProvider()
-        bet = _ValidBet(
-            goal_id="G-1", title="B", description="d", created_at="2026-06-22"
-        )
+        bet = _ValidBet(goal_id="G-1", title="B", description="d", created_at="2026-06-22")
         returned_id = store.save_bet(bet)
         assert returned_id == "G-1"
         active = store.get_active_bets()
@@ -243,9 +239,7 @@ class TestIStorageProviderBehavior:
 
     def test_save_and_get_pitches_roundtrip(self):
         store = _ValidStorageProvider()
-        pitch = _ValidPitch(
-            pitch_id="P-1", title="X", content="content", created_at="now"
-        )
+        pitch = _ValidPitch(pitch_id="P-1", title="X", content="content", created_at="now")
         store._pitches[pitch.pitch_id] = pitch
         pitches = store.get_pitches()
         assert len(pitches) == 1
@@ -253,9 +247,7 @@ class TestIStorageProviderBehavior:
 
     def test_delete_pitch_removes(self):
         store = _ValidStorageProvider()
-        pitch = _ValidPitch(
-            pitch_id="P-1", title="X", content="content", created_at="now"
-        )
+        pitch = _ValidPitch(pitch_id="P-1", title="X", content="content", created_at="now")
         store._pitches[pitch.pitch_id] = pitch
         assert store.delete_pitch("P-1") is True
         assert store.get_pitches() == []
@@ -266,9 +258,7 @@ class TestIStorageProviderBehavior:
 
     def test_get_active_bets_filters(self):
         store = _ValidStorageProvider()
-        active_bet = _ValidBet(
-            goal_id="G-1", title="A", description="d", status="active", created_at="now"
-        )
+        active_bet = _ValidBet(goal_id="G-1", title="A", description="d", status="active", created_at="now")
         archived_bet = _ValidBet(
             goal_id="G-2",
             title="B",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from c2g.bridge_depend import _resolve_depends_on
 from c2g.omo_client import _import_omo_module, validate_planned_task_data
 

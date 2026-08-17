@@ -96,9 +96,7 @@ def test_outcome_tracker_publish_integration(tmp_path):
     tracker.track_pitch_creation("pitch-int-1", "path/to/pitch.md")
     tracker.add_lessons_learned("pitch-int-1", "Ensure good testing")
 
-    res = tracker.publish_outcome_to_knowledge(
-        "pitch-int-1", agora_endpoint="http://127.0.0.1:9 | INVALID"
-    )
+    res = tracker.publish_outcome_to_knowledge("pitch-int-1", agora_endpoint="http://127.0.0.1:9 | INVALID")
     assert res is not None
     assert res["status"] == "degraded_offline"
     assert "pitch-int-1" in res["payload"]["content"]
