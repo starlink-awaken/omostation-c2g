@@ -7,6 +7,18 @@ import pytest
 from c2g.bridge_depend import _resolve_depends_on
 from c2g.omo_client import _import_omo_module, validate_planned_task_data
 
+# c2g bridges into the `omo` package (schema/ingress). Inside the root
+# monorepo checkout `_import_omo_module` falls back to
+# <root>/projects/omo/src; in the standalone c2g repo CI there is no `omo`
+# package, so the bridge-dependent tests are skipped there (they run in the
+# monorepo). Keep the pure bridge/edge-case tests always enabled.
+try:
+    _import_omo_module("omo.omo_task_schema")
+    OMO_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    # Probe failure just means the standalone repo has no omo package.
+    OMO_AVAILABLE = False
+
 
 class TestResolveDependsOn:
     def test_empty_list(self):
@@ -82,6 +94,7 @@ class TestResolveDependsOn:
         assert result == ["HASH-A", "B", "HASH-C", "D"]
 
 
+@pytest.mark.skipif(not OMO_AVAILABLE, reason="requires monorepo omo package (schema/ingress); skipped in standalone c2g CI")
 class TestImportOmoModule:
     """测试 omo_client._import_omo_module 动态导入"""
 
@@ -101,6 +114,7 @@ class TestImportOmoModule:
             _import_omo_module("omo.nonexistent_module_xyz")
 
 
+@pytest.mark.skipif(not OMO_AVAILABLE, reason="requires monorepo omo package (schema/ingress); skipped in standalone c2g CI")
 class TestValidatePlannedTaskData:
     """validate_planned_task_data 是 omo.omo_task_schema.validate_task_data 的 wrapper"""
 
