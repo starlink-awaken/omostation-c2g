@@ -28,7 +28,8 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # CR-CI-RUNNER-COST: src/ 零 darwin 分支, macOS 腿 (10x 单价) 无覆盖收益
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
