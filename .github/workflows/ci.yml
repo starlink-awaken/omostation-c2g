@@ -42,3 +42,14 @@ jobs:
         run: uv sync
       - name: Run in-process tests
         run: uv run pytest tests/ -q --tb=short --deselect tests/test_smoke.py --deselect tests/test_bet_id_reuse.py
+
+  # CR-CI-RUNNER-COST: macOS 10x / Windows 2x 单价 (Linux 1x) —— 未登记即阻塞
+  runner-cost:
+    name: CR-CI-RUNNER-COST (runner 成本守门)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pyyaml
+        run: python3 -m pip install --quiet pyyaml
+      - name: Scan workflows for paid OS runners
+        run: python3 bin/gac/check-runner-cost.py
